@@ -3,11 +3,6 @@ package config
 import (
 	"errors"
 	"flag"
-	"io/ioutil"
-	"fmt"
-	"github.com/Sirupsen/logrus"
-	"encoding/json"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 const (
@@ -55,6 +50,7 @@ func (c *Config) setFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.FlagJSONSchema, "config-json-schema", c.FlagJSONSchema, "Use a custom json schema.")
 }
 
+// NewConfig returns a new instance of Config with loaded fields.
 func NewConfig(args []string) (*Config, error) {
 	config := &Config{}
 	if len(args) == 0 {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/dcos/dcos-go/dcos-log/journal/reader"
-	"context"
 )
 
 type rangeHeader struct {
