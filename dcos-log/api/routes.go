@@ -20,6 +20,11 @@ func loadRoutes() []router.Route {
 			Handler: streamingServerTextHandler,
 			Headers: []string{"Accept", "text/(plain|html)"},
 		},
+		{
+			URL:     "/stream",
+			Handler: streamingServerTextHandler,
+			Headers: []string{"Accept", "\\*/\\*"},
+		},
 
 		// get a range of logs, do not wait
 		{
@@ -37,13 +42,10 @@ func loadRoutes() []router.Route {
 			Handler: rangeServerTextHandler,
 			Headers: []string{"Accept", "text/(plain|html)"},
 		},
-
-		// TODO(mnaboka): indexHandler is not supposed to be here. Remove it.
-		// read index.html off the filesystem
 		{
-			URL:     "/",
-			Handler: indexHandler,
-			Headers: []string{"Accept", "text/(plain|html)"},
+			URL:     "/logs",
+			Handler: rangeServerTextHandler,
+			Headers: []string{"Accept", "\\*/\\*"},
 		},
 	}
 }

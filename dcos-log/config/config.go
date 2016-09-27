@@ -58,7 +58,7 @@ func NewConfig(args []string) (*Config, error) {
 	}
 
 	// load default config values
-	config.FlagPort = 1051
+	config.FlagPort = 8080
 
 	flagSet := flag.NewFlagSet("dcos-log", flag.ContinueOnError)
 	config.setFlags(flagSet)

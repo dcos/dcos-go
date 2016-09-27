@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -113,8 +112,11 @@ func readJournalHandler(w http.ResponseWriter, req *http.Request, stream bool, c
 	// open journal reader
 	var limit *reader.Num
 	if rHeader.Num > 0 {
-		limit = &reader.Num{rHeader.Num}
+		limit = &reader.Num{
+			Value: rHeader.Num,
+		}
 	}
+
 	j, err := reader.NewReader(limit, contentType)
 	if err != nil {
 		e := fmt.Sprintf("Error opening journal reader: %s", err)
@@ -244,14 +246,4 @@ func rangeServerJSONHandler(w http.ResponseWriter, req *http.Request) {
 
 func rangeServerTextHandler(w http.ResponseWriter, req *http.Request) {
 	readJournalHandler(w, req, false, reader.ContentTypeText)
-}
-
-// TODO(mnanoka): remove this
-func indexHandler(w http.ResponseWriter, req *http.Request) {
-	body, err := ioutil.ReadFile("./index.html")
-	if err != nil {
-		http.NotFound(w, req)
-		return
-	}
-	w.Write(body)
 }
