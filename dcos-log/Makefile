@@ -10,6 +10,7 @@ lint:
 
 test:
 	@echo "+$@"
+	go test -race -cover -test.v ./...
 
 build:
 	@echo "+$@"
