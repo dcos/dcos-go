@@ -57,8 +57,8 @@ type Reader struct {
 	Journal *sdjournal.Journal
 	Limit   *Num
 
-	msgReader       *bytes.Reader
-	getDataFn       func() ([]byte, error)
+	msgReader *bytes.Reader
+	getDataFn func() ([]byte, error)
 }
 
 // Read is implementation of Reader interface.

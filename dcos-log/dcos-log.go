@@ -1,12 +1,12 @@
 package main
 
 import (
-	_ "github.com/dcos/dcos-go/dcos-log/api"
-	_ "github.com/dcos/dcos-go/dcos-log/router"
-	_ "github.com/dcos/dcos-go/dcos-log/journal/reader"
-	"github.com/dcos/dcos-go/dcos-log/config"
-	"os"
 	"github.com/Sirupsen/logrus"
+	_ "github.com/dcos/dcos-go/dcos-log/api"
+	"github.com/dcos/dcos-go/dcos-log/config"
+	_ "github.com/dcos/dcos-go/dcos-log/journal/reader"
+	_ "github.com/dcos/dcos-go/dcos-log/router"
+	"os"
 )
 
 func main() {

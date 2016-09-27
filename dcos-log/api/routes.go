@@ -4,7 +4,7 @@ import "github.com/dcos/dcos-go/dcos-log/router"
 
 func loadRoutes() []router.Route {
 	return []router.Route{
-				// wait for the new logs, server will not close the connection
+		// wait for the new logs, server will not close the connection
 		{
 			URL:     "/stream",
 			Handler: streamingServerSSEHandler,
