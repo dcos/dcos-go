@@ -1,0 +1,21 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "ZPLOQUBhnGltMZayk9PlITh60R4=",
+			"path": "github.com/dcos/dcos-go/jwt/transport",
+			"revision": "230c21341624ad2997936d2b32e72cd9c93c504b",
+			"revisionTime": "2016-10-18T22:32:54Z"
+		},
+		{
+			"checksumSHA1": "7oJyGPn6FhDZeJy9wuWqWSQ5XFM=",
+			"path": "github.com/dgrijalva/jwt-go",
+			"revision": "a2c85815a77d0f951e33ba4db5ae93629a1530af",
+			"revisionTime": "2016-04-13T00:36:00Z",
+			"version": "v2.6.0",
+			"versionExact": "v2.6.0"
+		}
+	],
+	"rootPath": "github.com/dcos/dcos-go/jwt/transport/cmd/example"
+}
