@@ -70,8 +70,7 @@ func (c *Cache) Purge() {
 	c.objects = map[string]Object{}
 }
 
-// Set creates an object in the cache with a specified TTL `d` (in seconds). Note that TTL must be a
-// positive, non-zero integer. If the object already exists, it is overwritten. For bulk operations,
+// Set creates an object in the cache. If the object already exists, it is overwritten. For bulk operations,
 // you may wish to use Supplant(map[string]cache.Object) in your code instead.
 func (c *Cache) Set(key string, val interface{}) {
 	c.mutex.Lock()

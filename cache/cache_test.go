@@ -15,170 +15,211 @@
 package cache
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
+// When creating a new instance of the cache, it should resemble &Cache
 func TestNew(t *testing.T) {
-	Convey("When creating a new instance of the cache", t, func() {
-		c := New()
+	c := New()
 
-		Convey("Should return a new cache object", func() {
-			So(c, ShouldResemble, &Cache{objects: map[string]Object{}})
-		})
-	})
+	if !reflect.DeepEqual(c, &Cache{objects: map[string]Object{}}) {
+		t.Fatalf("Expected a new cache instance to resemble &Cache. Got: %v", c)
+	}
 }
 
+// When deleting an object in the cache, the object should be removed completely
 func TestDelete(t *testing.T) {
-	Convey("When deleting an object in the cache", t, func() {
-		c := New()
-		c.Set("foo", "bar")
-		Convey("Should remove the object completely", func() {
-			c.Delete("foo")
-			_, ok := c.Get("foo")
+	c := New()
+	c.objects = map[string]Object{}
+	c.objects["foo"] = Object{Contents: "bar"}
 
-			So(c.Size(), ShouldEqual, 0)
-			So(ok, ShouldBeFalse)
-		})
-	})
+	c.Delete("foo")
+
+	if l := len(c.objects); l != 0 {
+		t.Fatalf("Expected the number of cache objects to be 0. Got: %d", l)
+	}
+
+	if oc, ok := c.objects["foo"]; ok != false {
+		t.Fatalf("Expected 'foo' to not be found (but it was!). Got: %s", oc)
+	}
 }
 
+// When getting an object in the cache, the object's contents should be returned
+// if it exists. If the requested object doesn't exist, should return nil.
 func TestGet(t *testing.T) {
-	Convey("When getting an object in the cache", t, func() {
-		c := New()
-		c.Set("foo", "bar")
+	c := New()
+	c.objects = map[string]Object{}
+	c.objects["foo"] = Object{Contents: "bar"}
 
-		Convey("Should return the value from an object that exists", func() {
-			val, ok := c.Get("foo")
-			So(val, ShouldEqual, "bar")
-			So(ok, ShouldBeTrue)
-		})
+	var val interface{}
+	var ok bool
 
-		Convey("Should return nil for an object that doesn't exist", func() {
-			val, ok := c.Get("someNonExistentKey")
-			So(val, ShouldBeNil)
-			So(ok, ShouldBeFalse)
-		})
-	})
+	val, ok = c.Get("foo")
+	if val != "bar" {
+		t.Fatalf("Expected value returned to be 'bar'. Got: %s", val)
+	}
+	if ok != true {
+		t.Fatalf("Expected second assignment 'ok' to be true (but it wasn't!)")
+	}
+
+	val, ok = c.Get("someNonExistentKey")
+	if val != nil {
+		t.Fatalf("Expected contents of a non-existent key to be nil. Got: %v", val)
+	}
+	if ok != false {
+		t.Fatalf("Expected second assignment 'ok' to be false (but it wasn't!)")
+	}
 }
 
+// When getting all objects in the cache, all objects should be returned.
+// Nothing more, nothing less.
 func TestObjects(t *testing.T) {
-	Convey("When getting all objects in the cache", t, func() {
-		c := New()
-		c.Set("foo", "fooval")
-		c.Set("bar", "barval")
-		c.Set("baz", "bazval")
+	testCases := []struct {
+		key string
+		val string
+	}{
+		{"foo", "fooval"},
+		{"bar", "barval"},
+		{"baz", "bazval"},
+	}
 
-		Convey("Should return all objects; nothing more, nothing less", func() {
-			o := c.Objects()
+	c := New()
+	for _, tc := range testCases {
+		c.Set(tc.key, tc.val)
+	}
 
-			So(len(o), ShouldEqual, 3)
-			So(o["foo"].Contents, ShouldEqual, "fooval")
-			So(o["bar"].Contents, ShouldEqual, "barval")
-			So(o["baz"].Contents, ShouldEqual, "bazval")
-		})
-	})
+	o := c.Objects()
+
+	if l := len(o); l != 3 {
+		t.Fatalf("Expected 3 items in the cache. Got: %d", l)
+	}
+
+	for _, tc := range testCases {
+		if oc := o[tc.key].Contents; oc != tc.val {
+			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
+		}
+	}
 }
 
+// When purging the cache, all objects should be deleted.
 func TestPurge(t *testing.T) {
-	Convey("When purging the cache", t, func() {
-		c := New()
-		c.Set("foo", "fooval")
-		c.Set("bar", "barval")
+	testCases := []struct {
+		key string
+		val string
+	}{
+		{"foo", "fooval"},
+		{"bar", "barval"},
+		{"baz", "bazval"},
+	}
 
-		Convey("Should delete all objects", func() {
-			c.Purge()
-			o := c.objects
+	c := New()
+	for _, tc := range testCases {
+		c.Set(tc.key, tc.val)
+	}
 
-			So(len(o), ShouldEqual, 0)
-			So(o["foo"].Contents, ShouldBeNil)
-			So(o["bar"].Contents, ShouldBeNil)
-		})
-	})
+	c.Purge()
+
+	if l := len(c.objects); l != 0 {
+		t.Fatalf("Expected 0 objects in the cache. Got: %d", l)
+	}
+
+	for _, tc := range testCases {
+		if oc := c.objects[tc.key].Contents; oc != nil {
+			t.Fatalf("Expected to not find any objects in the cache. Got: %s", oc)
+		}
+	}
 }
 
+// When setting the value of an object in the cache, the value should be set
+// and retrievable, and other objects in the cache should be untouched.
 func TestSet(t *testing.T) {
-	Convey("When setting the value of an object in the cache", t, func() {
-		c := New()
-		c.Set("foo", "fooval")
-		c.Set("bar", "barval")
+	testCases := []struct {
+		key string
+		val string
+	}{
+		{"foo", "fooval"},
+		{"bar", "barval"},
+		{"baz", "bazval"},
+	}
 
-		Convey("The value should be set and retrievable", func() {
-			So(len(c.objects), ShouldEqual, 2)
-			So(c.objects["foo"].Contents, ShouldEqual, "fooval")
-		})
+	c := New()
+	for _, tc := range testCases {
+		c.Set(tc.key, tc.val)
+	}
 
-		Convey("Other objects in the cache should be untouched", func() {
-			So(c.objects["bar"].Contents, ShouldEqual, "barval")
-		})
-	})
+	if l := len(c.objects); l != 3 {
+		t.Fatalf("Expected 3 objects in the cache. Got: %d", l)
+	}
+
+	for _, tc := range testCases {
+		if oc := c.objects[tc.key].Contents; oc != tc.val {
+			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
+		}
+	}
 }
 
+// When getting the number of objects in the cache, the correct size should be
+// returned as a positive int. When adding or removing items, the new size
+// should be returned.
 func TestSize(t *testing.T) {
-	Convey("When getting the number of objects in the cache", t, func() {
-		c := New()
-		c.Set("foo", "fooval")
-		c.Set("bar", "barval")
-		c.Set("baz", "bazval")
+	testCases := []struct {
+		key string
+		val string
+	}{
+		{"foo", "fooval"},
+		{"bar", "barval"},
+		{"baz", "bazval"},
+	}
 
-		Convey("Should return the correct number of objects as a positive int", func() {
-			So(c.Size(), ShouldEqual, 3)
-		})
+	c := New()
+	for _, tc := range testCases {
+		c.Set(tc.key, tc.val)
+	}
 
-		Convey("When adding an object to the cache, the size should be larger", func() {
-			c.Set("quux", "quuxval")
-			So(c.Size(), ShouldEqual, 4)
-			c.Delete("quux")
-		})
-
-		Convey("When removing an object from the cache, the size should be smaller", func() {
-			c.Delete("foo")
-			So(c.Size(), ShouldEqual, 2)
-		})
-	})
+	if l := c.Size(); l != 3 {
+		t.Fatalf("Expected 3 objects in the cache. Got: %d", l)
+	}
 }
 
+// When replacing all objects in the cache with a new map of cache objects,
+// only the new objects should exist.
 func TestSupplant(t *testing.T) {
-	Convey("When replacing all objects in a cache with a new map of cache Objects", t, func() {
-		c := New()
-		c.Set("foo1", "fooval1")
-		c.Set("bar1", "barval1")
-		c.Set("baz1", "bazval1")
+	initialTestCases := []struct {
+		key string
+		val string
+	}{
+		{"foo1", "fooval1"},
+		{"bar1", "barval1"},
+		{"baz1", "bazval1"},
+	}
+	finalTestCases := []struct {
+		key string
+		val string
+	}{
+		{"foo2", "fooval2"},
+		{"bar2", "barval2"},
+	}
 
-		Convey("Only those objects should exist", func() {
-			var val interface{}
-			var ok bool
+	c := New()
+	for _, tc := range initialTestCases {
+		c.Set(tc.key, tc.val)
+	}
 
-			newMap := make(map[string]Object)
-			newMap["foo2"] = Object{Contents: "fooval2"}
-			newMap["bar2"] = Object{Contents: "barval2"}
+	newMap := make(map[string]Object)
+	for _, tc := range finalTestCases {
+		newMap[tc.key] = Object{Contents: tc.val}
+	}
 
-			c.Supplant(newMap)
-			fmt.Println(c.Objects())
+	c.Supplant(newMap)
 
-			So(c.Size(), ShouldEqual, 2)
+	if l := c.Size(); l != 2 {
+		t.Fatalf("Expected the cache to contain 2 objects. Got: %d", l)
+	}
 
-			val, ok = c.Get("foo2")
-			So(val, ShouldEqual, "fooval2")
-			So(ok, ShouldBeTrue)
-
-			val, ok = c.Get("bar2")
-			So(val, ShouldEqual, "barval2")
-			So(ok, ShouldBeTrue)
-
-			val, ok = c.Get("foo1")
-			So(val, ShouldBeNil)
-			So(ok, ShouldBeFalse)
-
-			val, ok = c.Get("bar1")
-			So(val, ShouldBeNil)
-			So(ok, ShouldBeFalse)
-
-			val, ok = c.Get("baz1")
-			So(val, ShouldBeNil)
-			So(ok, ShouldBeFalse)
-		})
-	})
+	for _, tc := range finalTestCases {
+		if oc := c.objects[tc.key].Contents; oc != tc.val {
+			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
+		}
+	}
 }

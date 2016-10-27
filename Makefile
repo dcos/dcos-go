@@ -6,7 +6,6 @@ test: $(SUBDIRS)
 install-deps:
 	go get -u github.com/golang/lint/golint
 	go get -u github.com/kardianos/govendor
-	go get -u github.com/smartystreets/goconvey
 	govendor init
 	govendor fetch github.com/dgrijalva/jwt-go@v2.6.0
 
