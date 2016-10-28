@@ -13,15 +13,15 @@ in [dcos-metrics][dcos-metrics-github] where we have a need to cache a
 import "github.com/dcos/dcos-go/store"
 
 // Basic usage
-c := store.New()
-c.Set("foo", "fooval")
-c.Set("bar", "barval")
+s := store.New()
+s.Set("foo", "fooval")
+s.Set("bar", "barval")
 
-c.Get("foo") // fooval
-c.Objects()  // map[foo:{fooval} bar:{barval} baz:{bazval}]
-c.Size()     // 1
-c.Delete("foo")
-c.Purge()
+s.Get("foo") // fooval
+s.Objects()  // map[foo:{fooval} bar:{barval} baz:{bazval}]
+s.Size()     // 1
+s.Delete("foo")
+s.Purge()
 
 // Advanced usage
 newMap := make(map[string]interface{})
@@ -29,7 +29,7 @@ newMap["foo2"] = "fooval2"
 newMap["bar2"] = "barval2"
 
 // Replace (supplant) all objects in the cache with thsoe in newMap
-c.Supplant(newMap) // map[foo2:{fooval2} bar2:{barval2}]
+s.Supplant(newMap) // map[foo2:{fooval2} bar2:{barval2}]
 ```
 
 [dcos-metrics-github]: https://github.com/dcos/dcos-metrics
