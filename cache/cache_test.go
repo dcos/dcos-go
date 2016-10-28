@@ -14,25 +14,59 @@
 
 package cache
 
-import (
-	"reflect"
-	"testing"
-)
+import "testing"
 
-// When creating a new instance of the cache, it should resemble &Cache
-func TestNew(t *testing.T) {
-	c := New()
+// Smoketest that the SimpleCache works at a high level
+func TestSimpleCache(t *testing.T) {
+	c := SimpleCache()
+	var cv interface{}
+	var ok bool
 
-	if !reflect.DeepEqual(c, &Cache{objects: map[string]Object{}}) {
-		t.Fatalf("Expected a new cache instance to resemble &Cache. Got: %v", c)
+	// Smoketest Set(), Get(), and Objects()
+	c.Set("foo", "bar")
+	cv, ok = c.Get("foo")
+	if cv != "bar" {
+		t.Fatalf("Expected key 'foo' to have value 'bar'. Got: %s", cv)
+	}
+	if ok != true {
+		t.Fatalf("Expected ok to be true (but it wasn't!)")
+	}
+	if l := len(c.Objects()); l != 1 {
+		t.Fatalf("Expected objects in the cache to be 1. Got: %d", l)
+	}
+
+	// Smoketest Delete()
+	c.Delete("foo")
+	if l := len(c.Objects()); l != 0 {
+		t.Fatalf("Expected objects in the cache to be 0. Got: %d", l)
+	}
+
+	// Smoketest Supplant() and Size()
+	someMap := make(map[string]interface{})
+	testCases := []struct {
+		key string
+		val string
+	}{
+		{"foo2", "fooval2"},
+		{"bar2", "barval2"},
+		{"baz2", "bazval2"},
+	}
+
+	for _, tc := range testCases {
+		someMap[tc.key] = tc.val
+	}
+
+	c.Supplant(someMap)
+	if l := c.Size(); l != 3 {
+		t.Fatalf("Expected 3 objects in the cache. Got: %d", l)
 	}
 }
 
-// When deleting an object in the cache, the object should be removed completely
-func TestDelete(t *testing.T) {
-	c := New()
-	c.objects = map[string]Object{}
-	c.objects["foo"] = Object{Contents: "bar"}
+// When deleting an object in the SimpleCache, the object should be removed completely
+func TestSimpleCache_Delete(t *testing.T) {
+	var c cacheImpl
+	c.objects = map[string]object{}
+	c.objects["foo"] = object{contents: "bar"}
 
 	c.Delete("foo")
 
@@ -45,12 +79,12 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-// When getting an object in the cache, the object's contents should be returned
-// if it exists. If the requested object doesn't exist, should return nil.
-func TestGet(t *testing.T) {
-	c := New()
-	c.objects = map[string]Object{}
-	c.objects["foo"] = Object{Contents: "bar"}
+// When getting an object in the SimpleCache, the object's contents should be
+// returned if it exists. If the requested object doesn't exist, should return nil.
+func TestSimpleCache_Get(t *testing.T) {
+	var c cacheImpl
+	c.objects = map[string]object{}
+	c.objects["foo"] = object{contents: "bar"}
 
 	var val interface{}
 	var ok bool
@@ -72,9 +106,9 @@ func TestGet(t *testing.T) {
 	}
 }
 
-// When getting all objects in the cache, all objects should be returned.
+// When getting all objects in the SimpleCache, all objects should be returned.
 // Nothing more, nothing less.
-func TestObjects(t *testing.T) {
+func TestSimpleCache_Objects(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -84,9 +118,11 @@ func TestObjects(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	c := New()
+	var c cacheImpl
+	c.objects = map[string]object{}
+
 	for _, tc := range testCases {
-		c.Set(tc.key, tc.val)
+		c.objects[tc.key] = object{contents: tc.val}
 	}
 
 	o := c.Objects()
@@ -96,14 +132,14 @@ func TestObjects(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if oc := o[tc.key].Contents; oc != tc.val {
+		if oc := o[tc.key]; oc != tc.val {
 			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
 		}
 	}
 }
 
-// When purging the cache, all objects should be deleted.
-func TestPurge(t *testing.T) {
+// When purging the SimpleCache, all objects should be deleted.
+func TestSimpleCache_Purge(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -113,7 +149,9 @@ func TestPurge(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	c := New()
+	var c cacheImpl
+	c.objects = map[string]object{}
+
 	for _, tc := range testCases {
 		c.Set(tc.key, tc.val)
 	}
@@ -125,15 +163,15 @@ func TestPurge(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if oc := c.objects[tc.key].Contents; oc != nil {
+		if oc := c.objects[tc.key].contents; oc != nil {
 			t.Fatalf("Expected to not find any objects in the cache. Got: %s", oc)
 		}
 	}
 }
 
-// When setting the value of an object in the cache, the value should be set
+// When setting the value of an object in the SimpleCache, the value should be set
 // and retrievable, and other objects in the cache should be untouched.
-func TestSet(t *testing.T) {
+func TestSimpleCache_Set(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -143,7 +181,9 @@ func TestSet(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	c := New()
+	var c cacheImpl
+	c.objects = map[string]object{}
+
 	for _, tc := range testCases {
 		c.Set(tc.key, tc.val)
 	}
@@ -153,16 +193,16 @@ func TestSet(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if oc := c.objects[tc.key].Contents; oc != tc.val {
+		if oc := c.objects[tc.key].contents; oc != tc.val {
 			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
 		}
 	}
 }
 
-// When getting the number of objects in the cache, the correct size should be
+// When getting the number of objects in the SimpleCache, the correct size should be
 // returned as a positive int. When adding or removing items, the new size
 // should be returned.
-func TestSize(t *testing.T) {
+func TestSimpleCache_Size(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -172,7 +212,9 @@ func TestSize(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	c := New()
+	var c cacheImpl
+	c.objects = map[string]object{}
+
 	for _, tc := range testCases {
 		c.Set(tc.key, tc.val)
 	}
@@ -182,9 +224,9 @@ func TestSize(t *testing.T) {
 	}
 }
 
-// When replacing all objects in the cache with a new map of cache objects,
+// When replacing all objects in the SimpleCache with a new map of cache objects,
 // only the new objects should exist.
-func TestSupplant(t *testing.T) {
+func TestSimpleCache_Supplant(t *testing.T) {
 	initialTestCases := []struct {
 		key string
 		val string
@@ -201,14 +243,16 @@ func TestSupplant(t *testing.T) {
 		{"bar2", "barval2"},
 	}
 
-	c := New()
+	var c cacheImpl
+	c.objects = map[string]object{}
+
 	for _, tc := range initialTestCases {
 		c.Set(tc.key, tc.val)
 	}
 
-	newMap := make(map[string]Object)
+	newMap := make(map[string]interface{})
 	for _, tc := range finalTestCases {
-		newMap[tc.key] = Object{Contents: tc.val}
+		newMap[tc.key] = tc.val
 	}
 
 	c.Supplant(newMap)
@@ -218,7 +262,7 @@ func TestSupplant(t *testing.T) {
 	}
 
 	for _, tc := range finalTestCases {
-		if oc := c.objects[tc.key].Contents; oc != tc.val {
+		if oc := c.objects[tc.key].contents; oc != tc.val {
 			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
 		}
 	}

@@ -12,39 +12,55 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cache is a simple, local, in-memory key-value store.
+// Package cache is a simple, local, goroutine-safe in-memory key-value store.
 package cache
 
 import "sync"
 
-// Object represents a single object in the cache. Although this could be represented
-// as a bare interface{}, we chose to create a new Object type in case we wish to add
-// additional functionality or metadata in the future.
-type Object struct {
-	Contents interface{}
+// Cache represents the interface and available methods of the dcos-go/cache package.
+// At the moment, the only implementation is SimpleCache(), although this could be
+// expanded in the future to handle additional scenarios.
+type Cache interface {
+	Delete(string)
+	Get(string) (interface{}, bool)
+	Objects() map[string]interface{}
+	Purge()
+	Set(string, interface{})
+	Size() int
+	Supplant(map[string]interface{})
 }
 
-// Cache represents the structure of the objects in the cache (objects)
-// and a single locking mechanism (mutex) that is shared across a given instance
-// of the cache.
-type Cache struct {
-	objects map[string]Object
+// cacheImpl represents the structure of the cache, including the cache objects
+// and a single locking mechanism that is shared across a given instance, ensuring
+// some level of goroutine-safety.
+type cacheImpl struct {
+	objects map[string]object
 	mutex   sync.RWMutex
 }
 
-// New creates a new cache and returns it to the caller. The caller is then
-// responsible for creating and deleting objects.
-func New() *Cache {
-	return &Cache{objects: make(map[string]Object)}
+// object represents a single object in the cache. Although this could be represented
+// as a bare interface{}, we chose to create a new object type in case we wish to add
+// additional functionality or metadata in the future.
+type object struct {
+	contents interface{}
+}
+
+// SimpleCache creates a new, basic, in-memory cache. The caller must handle
+// all Set() and Delete() operations by itself; that is to say, there is no
+// concept of a maximum size or expiration on cached objects.
+func SimpleCache() Cache {
+	return &cacheImpl{objects: make(map[string]object)}
 }
 
 // Delete removes a single object from the cache.
-func (c *Cache) Delete(key string) {
+func (c *cacheImpl) Delete(key string) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	delete(c.objects, key)
 }
 
 // Get returns an object from the cache.
-func (c *Cache) Get(key string) (interface{}, bool) {
+func (c *cacheImpl) Get(key string) (interface{}, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -53,39 +69,58 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 		return nil, false
 	}
 
-	return object.Contents, true
+	return object.contents, true
 }
 
-// Objects returns all items in the cache as a map of objects, with a string as the key.
-func (c *Cache) Objects() map[string]Object {
+// Objects returns all objects in the cache.
+func (c *cacheImpl) Objects() (m map[string]interface{}) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	return c.objects
+
+	sz := len(c.objects)
+	if sz == 0 {
+		return
+	}
+
+	m = make(map[string]interface{}, sz)
+	for k, v := range c.objects {
+		m[k] = v.contents
+	}
+	return
 }
 
 // Purge removes ALL objects from the cache.
-func (c *Cache) Purge() {
+func (c *cacheImpl) Purge() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.objects = map[string]Object{}
+	c.objects = map[string]object{}
 }
 
-// Set creates an object in the cache. If the object already exists, it is overwritten. For bulk operations,
-// you may wish to use Supplant(map[string]cache.Object) in your code instead.
-func (c *Cache) Set(key string, val interface{}) {
+// Set creates an object in the cache. If the object already exists, it is overwritten.
+// For bulk operations, you may wish to use Supplant() instead to avoid the overhead of
+// obtaining a lock, writing data, and releasing the lock.
+func (c *cacheImpl) Set(key string, val interface{}) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.objects[key] = Object{Contents: val}
+	c.objects[key] = object{contents: val}
 }
 
 // Size returns the number of objects in the cache as an integer.
-func (c *Cache) Size() int {
+func (c *cacheImpl) Size() int {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return len(c.objects)
 }
 
-// Supplant replaces all objects in the cache based on a given map. This requires
-// that the caller has knowledge of our public Cache and Object structures, but
-// may make bulk modifications easier for some scenarios.
-func (c *Cache) Supplant(m map[string]Object) {
-	c.objects = m
+// Supplant replaces all objects in the cache based on a given map.
+func (c *cacheImpl) Supplant(m map[string]interface{}) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	n := make(map[string]object, len(m))
+	for k, v := range m {
+		n[k] = object{contents: v}
+	}
+
+	c.objects = n
 }

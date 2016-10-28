@@ -1,5 +1,5 @@
 # dcos-go/cache
-A simple, local, in-memory cache.
+A simple, local, and goroutine-safe in-memory key-value store.
 
 ## Overview
 dcos-go/cache is a simple, local, in-memory key-value store for caching objects
@@ -13,7 +13,7 @@ in [dcos-metrics][dcos-metrics-github] where we have a need to cache a
 import "github.com/dcos/dcos-go/cache"
 
 // Basic usage
-c := cache.New()
+c := cache.SimpleCache()
 c.Set("foo", "fooval")
 c.Set("bar", "barval")
 
@@ -24,10 +24,11 @@ c.Delete("foo")
 c.Purge()
 
 // Advanced usage
-newMap := make(map[string]cache.Object)
-newMap["foo2"] = cache.Object{Contents: "fooval2"}
-newMap["bar2"] = cache.Object{Contents: "barval2"}
+newMap := make(map[string]interface{})
+newMap["foo2"] = "fooval2"
+newMap["bar2"] = "barval2"
 
+// Replace (supplant) all objects in the cache with thsoe in newMap
 c.Supplant(newMap) // map[foo2:{fooval2} bar2:{barval2}]
 ```
 
