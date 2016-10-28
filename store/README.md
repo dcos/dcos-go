@@ -9,7 +9,7 @@ in [dcos-metrics][dcos-metrics-github] where we have a need to cache a
 
 ## Usage
 
-```golang
+```go
 import "github.com/dcos/dcos-go/store"
 
 // Basic usage
@@ -18,7 +18,7 @@ s.Set("foo", "fooval")
 s.Set("bar", "barval")
 
 s.Get("foo") // fooval
-s.Objects()  // map[foo:{fooval} bar:{barval} baz:{bazval}]
+s.Objects()  // map[foo:{fooval} bar:{barval}]
 s.Size()     // 1
 s.Delete("foo")
 s.Purge()
