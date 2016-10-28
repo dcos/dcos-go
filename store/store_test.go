@@ -12,33 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cache
+package store
 
 import "testing"
 
-// Smoketest that the cache works at a high level
-func TestCache(t *testing.T) {
-	c := New()
-	var cv interface{}
+// Smoketest that the store works at a high level
+func TestStore(t *testing.T) {
+	s := New()
+	var sv interface{}
 	var ok bool
 
 	// Smoketest Set(), Get(), and Objects()
-	c.Set("foo", "bar")
-	cv, ok = c.Get("foo")
-	if cv != "bar" {
-		t.Fatalf("Expected key 'foo' to have value 'bar'. Got: %s", cv)
+	s.Set("foo", "bar")
+	sv, ok = s.Get("foo")
+	if sv != "bar" {
+		t.Fatalf("Expected key 'foo' to have value 'bar'. Got: %s", sv)
 	}
 	if ok != true {
 		t.Fatalf("Expected ok to be true (but it wasn't!)")
 	}
-	if l := len(c.Objects()); l != 1 {
-		t.Fatalf("Expected objects in the cache to be 1. Got: %d", l)
+	if l := len(s.Objects()); l != 1 {
+		t.Fatalf("Expected objects in the store to be 1. Got: %d", l)
 	}
 
 	// Smoketest Delete()
-	c.Delete("foo")
-	if l := len(c.Objects()); l != 0 {
-		t.Fatalf("Expected objects in the cache to be 0. Got: %d", l)
+	s.Delete("foo")
+	if l := len(s.Objects()); l != 0 {
+		t.Fatalf("Expected objects in the store to be 0. Got: %d", l)
 	}
 
 	// Smoketest Supplant() and Size()
@@ -56,40 +56,40 @@ func TestCache(t *testing.T) {
 		someMap[tc.key] = tc.val
 	}
 
-	c.Supplant(someMap)
-	if l := c.Size(); l != 3 {
-		t.Fatalf("Expected 3 objects in the cache. Got: %d", l)
+	s.Supplant(someMap)
+	if l := s.Size(); l != 3 {
+		t.Fatalf("Expected 3 objects in the store. Got: %d", l)
 	}
 }
 
-// When deleting an object in the cache, the object should be removed completely
-func TestCache_Delete(t *testing.T) {
-	var c cacheImpl
-	c.objects = map[string]object{}
-	c.objects["foo"] = object{contents: "bar"}
+// When deleting an object in the store, the object should be removed completely
+func TestStore_Delete(t *testing.T) {
+	var s storeImpl
+	s.objects = map[string]object{}
+	s.objects["foo"] = object{contents: "bar"}
 
-	c.Delete("foo")
+	s.Delete("foo")
 
-	if l := len(c.objects); l != 0 {
-		t.Fatalf("Expected the number of cache objects to be 0. Got: %d", l)
+	if l := len(s.objects); l != 0 {
+		t.Fatalf("Expected the number of store objects to be 0. Got: %d", l)
 	}
 
-	if oc, ok := c.objects["foo"]; ok != false {
+	if oc, ok := s.objects["foo"]; ok != false {
 		t.Fatalf("Expected 'foo' to not be found (but it was!). Got: %s", oc)
 	}
 }
 
-// When getting an object in the cache, the object's contents should be
+// When getting an object in the store, the object's contents should be
 // returned if it exists. If the requested object doesn't exist, should return nil.
-func TestCache_Get(t *testing.T) {
-	var c cacheImpl
-	c.objects = map[string]object{}
-	c.objects["foo"] = object{contents: "bar"}
+func TestStore_Get(t *testing.T) {
+	var s storeImpl
+	s.objects = map[string]object{}
+	s.objects["foo"] = object{contents: "bar"}
 
 	var val interface{}
 	var ok bool
 
-	val, ok = c.Get("foo")
+	val, ok = s.Get("foo")
 	if val != "bar" {
 		t.Fatalf("Expected value returned to be 'bar'. Got: %s", val)
 	}
@@ -97,7 +97,7 @@ func TestCache_Get(t *testing.T) {
 		t.Fatalf("Expected second assignment 'ok' to be true (but it wasn't!)")
 	}
 
-	val, ok = c.Get("someNonExistentKey")
+	val, ok = s.Get("someNonExistentKey")
 	if val != nil {
 		t.Fatalf("Expected contents of a non-existent key to be nil. Got: %v", val)
 	}
@@ -106,9 +106,9 @@ func TestCache_Get(t *testing.T) {
 	}
 }
 
-// When getting all objects in the cache, all objects should be returned.
+// When getting all objects in the store, all objects should be returned.
 // Nothing more, nothing less.
-func TestCache_Objects(t *testing.T) {
+func TestStore_Objects(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -118,17 +118,17 @@ func TestCache_Objects(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	var c cacheImpl
-	c.objects = map[string]object{}
+	var s storeImpl
+	s.objects = map[string]object{}
 
 	for _, tc := range testCases {
-		c.objects[tc.key] = object{contents: tc.val}
+		s.objects[tc.key] = object{contents: tc.val}
 	}
 
-	o := c.Objects()
+	o := s.Objects()
 
 	if l := len(o); l != 3 {
-		t.Fatalf("Expected 3 items in the cache. Got: %d", l)
+		t.Fatalf("Expected 3 items in the store. Got: %d", l)
 	}
 
 	for _, tc := range testCases {
@@ -138,8 +138,8 @@ func TestCache_Objects(t *testing.T) {
 	}
 }
 
-// When purging the cache, all objects should be deleted.
-func TestCache_Purge(t *testing.T) {
+// When purging the store, all objects should be deleted.
+func TestStore_Purge(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -149,29 +149,29 @@ func TestCache_Purge(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	var c cacheImpl
-	c.objects = map[string]object{}
+	var s storeImpl
+	s.objects = map[string]object{}
 
 	for _, tc := range testCases {
-		c.Set(tc.key, tc.val)
+		s.Set(tc.key, tc.val)
 	}
 
-	c.Purge()
+	s.Purge()
 
-	if l := len(c.objects); l != 0 {
-		t.Fatalf("Expected 0 objects in the cache. Got: %d", l)
+	if l := len(s.objects); l != 0 {
+		t.Fatalf("Expected 0 objects in the store. Got: %d", l)
 	}
 
 	for _, tc := range testCases {
-		if oc := c.objects[tc.key].contents; oc != nil {
-			t.Fatalf("Expected to not find any objects in the cache. Got: %s", oc)
+		if oc := s.objects[tc.key].contents; oc != nil {
+			t.Fatalf("Expected to not find any objects in the store. Got: %s", oc)
 		}
 	}
 }
 
-// When setting the value of an object in the cache, the value should be set
-// and retrievable, and other objects in the cache should be untouched.
-func TestCache_Set(t *testing.T) {
+// When setting the value of an object in the store, the value should be set
+// and retrievable, and other objects in the store should be untouched.
+func TestStore_Set(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -181,28 +181,28 @@ func TestCache_Set(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	var c cacheImpl
-	c.objects = map[string]object{}
+	var s storeImpl
+	s.objects = map[string]object{}
 
 	for _, tc := range testCases {
-		c.Set(tc.key, tc.val)
+		s.Set(tc.key, tc.val)
 	}
 
-	if l := len(c.objects); l != 3 {
-		t.Fatalf("Expected 3 objects in the cache. Got: %d", l)
+	if l := len(s.objects); l != 3 {
+		t.Fatalf("Expected 3 objects in the store. Got: %d", l)
 	}
 
 	for _, tc := range testCases {
-		if oc := c.objects[tc.key].contents; oc != tc.val {
+		if oc := s.objects[tc.key].contents; oc != tc.val {
 			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
 		}
 	}
 }
 
-// When getting the number of objects in the cache, the correct size should be
+// When getting the number of objects in the store, the correct size should be
 // returned as a positive int. When adding or removing items, the new size
 // should be returned.
-func TestCache_Size(t *testing.T) {
+func TestStore_Size(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -212,21 +212,21 @@ func TestCache_Size(t *testing.T) {
 		{"baz", "bazval"},
 	}
 
-	var c cacheImpl
-	c.objects = map[string]object{}
+	var s storeImpl
+	s.objects = map[string]object{}
 
 	for _, tc := range testCases {
-		c.Set(tc.key, tc.val)
+		s.Set(tc.key, tc.val)
 	}
 
-	if l := c.Size(); l != 3 {
-		t.Fatalf("Expected 3 objects in the cache. Got: %d", l)
+	if l := s.Size(); l != 3 {
+		t.Fatalf("Expected 3 objects in the store. Got: %d", l)
 	}
 }
 
-// When replacing all objects in the cache with a new map of cache objects,
+// When replacing all objects in the store with a new map of store objects,
 // only the new objects should exist.
-func TestCache_Supplant(t *testing.T) {
+func TestStore_Supplant(t *testing.T) {
 	initialTestCases := []struct {
 		key string
 		val string
@@ -243,11 +243,11 @@ func TestCache_Supplant(t *testing.T) {
 		{"bar2", "barval2"},
 	}
 
-	var c cacheImpl
-	c.objects = map[string]object{}
+	var s storeImpl
+	s.objects = map[string]object{}
 
 	for _, tc := range initialTestCases {
-		c.Set(tc.key, tc.val)
+		s.Set(tc.key, tc.val)
 	}
 
 	newMap := make(map[string]interface{})
@@ -255,14 +255,14 @@ func TestCache_Supplant(t *testing.T) {
 		newMap[tc.key] = tc.val
 	}
 
-	c.Supplant(newMap)
+	s.Supplant(newMap)
 
-	if l := c.Size(); l != 2 {
-		t.Fatalf("Expected the cache to contain 2 objects. Got: %d", l)
+	if l := s.Size(); l != 2 {
+		t.Fatalf("Expected the store to contain 2 objects. Got: %d", l)
 	}
 
 	for _, tc := range finalTestCases {
-		if oc := c.objects[tc.key].contents; oc != tc.val {
+		if oc := s.objects[tc.key].contents; oc != tc.val {
 			t.Fatalf("Expected key '%s' to contain value '%s'. Got: %s", tc.key, tc.val, oc)
 		}
 	}

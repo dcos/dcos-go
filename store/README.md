@@ -1,8 +1,8 @@
-# dcos-go/cache
+# dcos-go/store
 A simple, local, and goroutine-safe in-memory key-value store.
 
 ## Overview
-dcos-go/cache is a simple, local, in-memory key-value store for caching objects
+dcos-go/store is a simple, local, in-memory key-value store for caching objects
 for short periods of time. The motivation for this project was the HTTP producer
 in [dcos-metrics][dcos-metrics-github] where we have a need to cache a
 "snapshot" of a given agent's metrics until the next polling interval.
@@ -10,10 +10,10 @@ in [dcos-metrics][dcos-metrics-github] where we have a need to cache a
 ## Usage
 
 ```golang
-import "github.com/dcos/dcos-go/cache"
+import "github.com/dcos/dcos-go/store"
 
 // Basic usage
-c := cache.SimpleCache()
+c := store.New()
 c.Set("foo", "fooval")
 c.Set("bar", "barval")
 
