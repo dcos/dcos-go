@@ -16,9 +16,9 @@ package cache
 
 import "testing"
 
-// Smoketest that the SimpleCache works at a high level
-func TestSimpleCache(t *testing.T) {
-	c := SimpleCache()
+// Smoketest that the cache works at a high level
+func TestCache(t *testing.T) {
+	c := New()
 	var cv interface{}
 	var ok bool
 
@@ -62,8 +62,8 @@ func TestSimpleCache(t *testing.T) {
 	}
 }
 
-// When deleting an object in the SimpleCache, the object should be removed completely
-func TestSimpleCache_Delete(t *testing.T) {
+// When deleting an object in the cache, the object should be removed completely
+func TestCache_Delete(t *testing.T) {
 	var c cacheImpl
 	c.objects = map[string]object{}
 	c.objects["foo"] = object{contents: "bar"}
@@ -79,9 +79,9 @@ func TestSimpleCache_Delete(t *testing.T) {
 	}
 }
 
-// When getting an object in the SimpleCache, the object's contents should be
+// When getting an object in the cache, the object's contents should be
 // returned if it exists. If the requested object doesn't exist, should return nil.
-func TestSimpleCache_Get(t *testing.T) {
+func TestCache_Get(t *testing.T) {
 	var c cacheImpl
 	c.objects = map[string]object{}
 	c.objects["foo"] = object{contents: "bar"}
@@ -106,9 +106,9 @@ func TestSimpleCache_Get(t *testing.T) {
 	}
 }
 
-// When getting all objects in the SimpleCache, all objects should be returned.
+// When getting all objects in the cache, all objects should be returned.
 // Nothing more, nothing less.
-func TestSimpleCache_Objects(t *testing.T) {
+func TestCache_Objects(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -138,8 +138,8 @@ func TestSimpleCache_Objects(t *testing.T) {
 	}
 }
 
-// When purging the SimpleCache, all objects should be deleted.
-func TestSimpleCache_Purge(t *testing.T) {
+// When purging the cache, all objects should be deleted.
+func TestCache_Purge(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -169,9 +169,9 @@ func TestSimpleCache_Purge(t *testing.T) {
 	}
 }
 
-// When setting the value of an object in the SimpleCache, the value should be set
+// When setting the value of an object in the cache, the value should be set
 // and retrievable, and other objects in the cache should be untouched.
-func TestSimpleCache_Set(t *testing.T) {
+func TestCache_Set(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -199,10 +199,10 @@ func TestSimpleCache_Set(t *testing.T) {
 	}
 }
 
-// When getting the number of objects in the SimpleCache, the correct size should be
+// When getting the number of objects in the cache, the correct size should be
 // returned as a positive int. When adding or removing items, the new size
 // should be returned.
-func TestSimpleCache_Size(t *testing.T) {
+func TestCache_Size(t *testing.T) {
 	testCases := []struct {
 		key string
 		val string
@@ -224,9 +224,9 @@ func TestSimpleCache_Size(t *testing.T) {
 	}
 }
 
-// When replacing all objects in the SimpleCache with a new map of cache objects,
+// When replacing all objects in the cache with a new map of cache objects,
 // only the new objects should exist.
-func TestSimpleCache_Supplant(t *testing.T) {
+func TestCache_Supplant(t *testing.T) {
 	initialTestCases := []struct {
 		key string
 		val string

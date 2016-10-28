@@ -18,8 +18,6 @@ package cache
 import "sync"
 
 // Cache represents the interface and available methods of the dcos-go/cache package.
-// At the moment, the only implementation is SimpleCache(), although this could be
-// expanded in the future to handle additional scenarios.
 type Cache interface {
 	Delete(string)
 	Get(string) (interface{}, bool)
@@ -45,10 +43,10 @@ type object struct {
 	contents interface{}
 }
 
-// SimpleCache creates a new, basic, in-memory cache. The caller must handle
+// New creates a new, basic, in-memory cache. The caller must handle
 // all Set() and Delete() operations by itself; that is to say, there is no
 // concept of a maximum size or expiration on cached objects.
-func SimpleCache() Cache {
+func New() Cache {
 	return &cacheImpl{objects: make(map[string]object)}
 }
 
@@ -97,8 +95,6 @@ func (c *cacheImpl) Purge() {
 }
 
 // Set creates an object in the cache. If the object already exists, it is overwritten.
-// For bulk operations, you may wish to use Supplant() instead to avoid the overhead of
-// obtaining a lock, writing data, and releasing the lock.
 func (c *cacheImpl) Set(key string, val interface{}) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
