@@ -106,6 +106,36 @@ func TestStore_Get(t *testing.T) {
 	}
 }
 
+// When getting objects in the store by regular expression, the objects should
+// be returned if they exist. Otherwise, return an empty map.
+func TestStore_GetByRegex(t *testing.T) {
+	testCases := []struct {
+		key string
+		val string
+	}{
+		{"foo", "bar"},
+		{"foo.bar", "baz"},
+		{"foo.bar.baz", "quux"},
+		{"bar", "foo"},
+	}
+	var s storeImpl
+	s.objects = map[string]object{}
+
+	for _, tc := range testCases {
+		s.objects[tc.key] = object{contents: tc.val}
+	}
+
+	result := s.GetByRegex("foo.*")
+
+	if l := len(result); l != 3 {
+		t.Fatalf("Expected 3 objects to be returned, got %d", l)
+	}
+
+	if _, ok := result["bar"]; ok {
+		t.Fatalf("Expected result to not contain key 'bar' (but it did!)")
+	}
+}
+
 // When getting all objects in the store, all objects should be returned.
 // Nothing more, nothing less.
 func TestStore_Objects(t *testing.T) {
