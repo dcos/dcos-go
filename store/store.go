@@ -61,7 +61,7 @@ func (s *storeImpl) Delete(key string) {
 	delete(s.objects, key)
 }
 
-// Get returns an object from the store.
+// Get returns a single key-value pair from the store based on its name.
 func (s *storeImpl) Get(key string) (interface{}, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
@@ -74,7 +74,7 @@ func (s *storeImpl) Get(key string) (interface{}, bool) {
 	return object.contents, true
 }
 
-// GetByRegex returns objects from the store based on a regexp search.
+// GetByRegex returns a map of key-value pairs from the store based on a regexp search.
 func (s *storeImpl) GetByRegex(expr string) (m map[string]interface{}) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
