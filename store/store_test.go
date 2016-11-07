@@ -125,7 +125,11 @@ func TestStore_GetByRegex(t *testing.T) {
 		s.objects[tc.key] = object{contents: tc.val}
 	}
 
-	result := s.GetByRegex("foo.*")
+	result, err := s.GetByRegex("foo.*")
+
+	if err != nil {
+		t.Fatalf("Expected error to be nil (but it wasn't!)")
+	}
 
 	if l := len(result); l != 3 {
 		t.Fatalf("Expected 3 objects to be returned, got %d", l)

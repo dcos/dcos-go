@@ -24,7 +24,7 @@ import (
 type Store interface {
 	Delete(string)
 	Get(string) (interface{}, bool)
-	GetByRegex(string) map[string]interface{}
+	GetByRegex(string) (map[string]interface{}, error)
 	Objects() map[string]interface{}
 	Purge()
 	Set(string, interface{})
@@ -75,17 +75,21 @@ func (s *storeImpl) Get(key string) (interface{}, bool) {
 }
 
 // GetByRegex returns a map of key-value pairs from the store based on a regexp search.
-func (s *storeImpl) GetByRegex(expr string) (m map[string]interface{}) {
+func (s *storeImpl) GetByRegex(expr string) (map[string]interface{}, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	m = make(map[string]interface{})
+	m := make(map[string]interface{})
 	for k, v := range s.objects {
-		if matched, _ := regexp.MatchString(expr, k); matched {
+		matched, err := regexp.MatchString(expr, k)
+		if err != nil {
+			return m, err
+		}
+		if matched {
 			m[k] = v.contents
 		}
 	}
-	return
+	return m, nil
 }
 
 // Objects returns all objects in the store.
