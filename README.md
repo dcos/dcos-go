@@ -3,3 +3,4 @@
 
 - [jwt/transport](/jwt/transport/README.md)
 - [store](/store/README.md)
+- [dcos/nodeutil](/dcos/nodeutil/README.md)
