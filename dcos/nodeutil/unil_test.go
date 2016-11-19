@@ -119,7 +119,7 @@ func TestMesosID(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	d, err := NewNodeInfo(&http.Client{}, OptionLeaderDomain(ts.URL), OptionMasterRoleFile("fixture/roles/master"),
+	d, err := NewNodeInfo(&http.Client{}, OptionMesosStateURL(ts.URL), OptionMasterRoleFile("fixture/roles/master"),
 		OptionDetectIP("fixture/detect_ip_good.sh"))
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +135,7 @@ func TestMesosID(t *testing.T) {
 	}
 
 	// Test agent response
-	d, err = NewNodeInfo(&http.Client{}, OptionLeaderDomain(ts.URL),
+	d, err = NewNodeInfo(&http.Client{}, OptionMesosStateURL(ts.URL),
 		OptionAgentRoleFile("fixture/roles/agent"), OptionDetectIP("fixture/detect_ip_good.sh"))
 	if err != nil {
 		t.Fatal(err)
@@ -158,7 +158,7 @@ func TestMesosIDFail(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	d, err := NewNodeInfo(&http.Client{}, OptionLeaderDomain(ts.URL), OptionMasterRoleFile("fixture/roles/master"))
+	d, err := NewNodeInfo(&http.Client{}, OptionMesosStateURL(ts.URL), OptionMasterRoleFile("fixture/roles/master"))
 	if err != nil {
 		t.Fatal(err)
 	}
