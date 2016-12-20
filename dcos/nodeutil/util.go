@@ -30,6 +30,13 @@ var defaultStateURL = url.URL{
 	Path:   "/state",
 }
 
+// The key type is unexported to prevent collisions with context keys defined in
+// other packages.
+type key int
+
+// requestHeaderKey is a context key for the user get request headers.
+var requestHeaderKey key = 1
+
 // ErrNodeInfo is an error structure raised by exported functions with meaningful error message.
 type ErrNodeInfo struct {
 	msg string
@@ -289,6 +296,9 @@ func (d *dcosInfo) MesosID(ctx context.Context) (string, error) {
 	}
 
 	if ctx != nil {
+		if header, ok := HeaderFromContext(ctx); ok {
+			req.Header = header
+		}
 		req = req.WithContext(ctx)
 	}
 
@@ -384,4 +394,27 @@ func (d *dcosInfo) ClusterID() (string, error) {
 	}
 
 	return clusterID, nil
+}
+
+// HeaderFromContext returns http.Header from a context if it's found.
+func HeaderFromContext(ctx context.Context) (http.Header, bool) {
+	if ctx == nil {
+		panic("Context cannot be nil")
+	}
+
+	requestValue := ctx.Value(requestHeaderKey)
+	if requestValue == nil {
+		return nil, false
+	}
+
+	header, ok := requestValue.(http.Header)
+	return header, ok
+}
+
+// NewContextWithHeaders adds http.Header to the instance of context.
+func NewContextWithHeaders(ctx context.Context, header http.Header) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, requestHeaderKey, header)
 }
