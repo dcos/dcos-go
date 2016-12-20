@@ -223,3 +223,22 @@ func TestClusterIDInvalidRole(t *testing.T) {
 		}
 	}
 }
+
+func TestContextWithHeaders(t *testing.T) {
+	header := http.Header{}
+	header.Add("TEST", "123")
+
+	ctx := NewContextWithHeaders(nil, header)
+	if ctx == nil {
+		t.Fatal("Context shouldn't be nil")
+	}
+
+	headerFromContext, ok := HeaderFromContext(ctx)
+	if !ok {
+		t.Fatal("header not found in context")
+	}
+
+	if value := headerFromContext.Get("TEST"); value != "123" {
+		t.Fatalf("Expect header `TEST:123`. Got %+v", headerFromContext)
+	}
+}
