@@ -21,9 +21,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-
-	"github.com/dcos/dcos-go/jwt/transport"
 )
+
+type dcosTransport struct {
+	CaCertificatePath string
+	IAMConfigPath     string
+}
 
 // loadCAPool will load a valid x509 cert.
 func loadCAPool(path string) (*x509.CertPool, error) {
@@ -69,23 +72,23 @@ func createTransport(caCertificatePath string) (*http.Transport, error) {
 
 // NewTransport returns a DC/OS transport implementation by leveraging a roundtripper for
 // IAM configuration if passed with a pre-configured TLS configuration.
-func NewTransport(clientOptionFuncs ...OptionFunc) (http.RoundTripper, error) {
-	transportOptions := options{}
+func NewTransport(clientOptionFuncs ...OptionTransportFunc) (http.RoundTripper, error) {
+	t := dcosTransport{}
 	for _, opt := range clientOptionFuncs {
-		if err := opt(&transportOptions); err != nil {
+		if err := opt(&t); err != nil {
 			return nil, err
 		}
 	}
 
-	tr, err := createTransport(transportOptions.CaCertificatePath)
+	tr, err := createTransport(t.CaCertificatePath)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(transportOptions.IAMConfigPath) != 0 {
-		withIAM, err := transport.NewRoundTripper(
+	if len(t.IAMConfigPath) != 0 {
+		withIAM, err := NewRoundTripper(
 			tr,
-			transport.OptionReadIAMConfig(transportOptions.IAMConfigPath))
+			OptionReadIAMConfig(t.IAMConfigPath))
 		if err != nil {
 			return nil, err
 		}

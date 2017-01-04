@@ -14,18 +14,30 @@
 
 package transport
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"os"
+	"time"
+)
 
-// OptionFunc type sets optional configurations for the
-// DC/OS HTTP client.
-type OptionFunc func(*options) error
+var (
+	// ErrInvalidCredentials is the error returned by NewRoundTripper if user used empty string for a credentials.
+	ErrInvalidCredentials = errors.New("uid, secret and loginEndpoit cannot be empty")
 
-// options struct contains configurable parameters
-// for the DC/OS HTTP client.
-type options struct {
-	CaCertificatePath string
-	IAMConfigPath     string
-}
+	// ErrInvalidExpireDuration is the error returned by NewRoundTripper if the token expire duration is negative or
+	// zero value.
+	ErrInvalidExpireDuration = errors.New("token expire duration must be positive non zero value")
+)
+
+// OptionTransportFunc type sets optional configurations for the
+// DC/OS HTTP transport
+type OptionTransportFunc func(*dcosTransport) error
+
+// OptionRoundtripperFunc type sets options configurations for the
+// DC/OS HTTP roundtripper
+type OptionRoundtripperFunc func(*dcosRoundtripper) error
 
 func errorOnEmpty(arg string) error {
 	if len(arg) == 0 {
@@ -35,8 +47,8 @@ func errorOnEmpty(arg string) error {
 }
 
 // OptionCaCertificatePath sets the CA certificate path option.
-func OptionCaCertificatePath(caCertificatePath string) OptionFunc {
-	return func(o *options) error {
+func OptionCaCertificatePath(caCertificatePath string) OptionTransportFunc {
+	return func(o *dcosTransport) error {
 		err := errorOnEmpty(caCertificatePath)
 		if err == nil {
 			o.CaCertificatePath = caCertificatePath
@@ -46,12 +58,64 @@ func OptionCaCertificatePath(caCertificatePath string) OptionFunc {
 }
 
 // OptionIAMConfigPath sets the IAM configuration path option.
-func OptionIAMConfigPath(iamConfigPath string) OptionFunc {
-	return func(o *options) error {
+func OptionIAMConfigPath(iamConfigPath string) OptionTransportFunc {
+	return func(o *dcosTransport) error {
 		err := errorOnEmpty(iamConfigPath)
 		if err == nil {
 			o.IAMConfigPath = iamConfigPath
 		}
 		return err
+	}
+}
+
+// OptionTokenExpire is an option to set JWT expiration date. If not set 24h is ussed by default.
+func OptionTokenExpire(t time.Duration) OptionRoundtripperFunc {
+	return func(j *dcosRoundtripper) error {
+		if t < 1 {
+			return ErrInvalidExpireDuration
+		}
+		j.expire = t
+		return nil
+	}
+}
+
+// OptionCredentials is an option to set uid, secret and loginEndpoint.
+func OptionCredentials(uid, secret, loginEndpoint string) OptionRoundtripperFunc {
+	return func(j *dcosRoundtripper) error {
+		if uid == "" || secret == "" || loginEndpoint == "" {
+			return ErrInvalidCredentials
+		}
+		j.uid = uid
+		j.secret = secret
+		j.loginEndpoint = loginEndpoint
+		return nil
+	}
+}
+
+// OptionReadIAMConfig is an option to read the IAMConfig from file system and populate uid, secret and loginEndpoint.
+func OptionReadIAMConfig(path string) OptionRoundtripperFunc {
+	return func(j *dcosRoundtripper) error {
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		fileContent, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
+		var cfg = struct {
+			UID           string `json:"uid"`
+			Secret        string `json:"private_key"`
+			LoginEndpoint string `json:"login_endpoint"`
+		}{}
+
+		if err := json.Unmarshal(fileContent, &cfg); err != nil {
+			return err
+		}
+
+		return OptionCredentials(cfg.UID, cfg.Secret, cfg.LoginEndpoint)(j)
 	}
 }

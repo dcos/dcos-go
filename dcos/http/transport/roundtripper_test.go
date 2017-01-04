@@ -74,14 +74,14 @@ func TestNewRoundTripper(t *testing.T) {
 		},
 	}
 
-	jwtTransport, err := NewRoundTripper(fr, OptionReadIAMConfig("./fixture/test_service_account.json"))
+	jwtTransport, err := NewRoundTripper(fr, OptionReadIAMConfig("./fixtures/test_service_account.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	debug, err := DebugTransport(jwtTransport)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("DebugTransport detected incorrect transport: %s", err)
 	}
 	if debug.CurrentToken() != signedToken {
 		t.Fatalf("Expect token %s. Got %s", signedToken, debug.CurrentToken())
@@ -121,7 +121,7 @@ func TestTokenUpdate(t *testing.T) {
 		},
 	}
 
-	jwtTransport, err := NewRoundTripper(fr, OptionReadIAMConfig("./fixture/test_service_account.json"))
+	jwtTransport, err := NewRoundTripper(fr, OptionReadIAMConfig("./fixtures/test_service_account.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,8 +153,9 @@ func TestTokenUpdate(t *testing.T) {
 
 func TestWrongTransport(t *testing.T) {
 	tr := &http.Transport{}
-	_, err := DebugTransport(tr)
-	if err != ErrWrongRoundTripperImpl {
+	// Expect to get incorrect transport type since we're debugging
+	// for a implWithJWT type transport.
+	if _, err := DebugTransport(tr); err != ErrWrongRoundTripperImpl {
 		t.Fatalf("Expect: %s. Got %s", ErrWrongRoundTripperImpl, err)
 	}
 }

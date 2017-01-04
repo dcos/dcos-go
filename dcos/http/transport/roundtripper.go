@@ -26,17 +26,10 @@ var (
 	ErrEmptyToken = errors.New("Empty token")
 
 	// ErrWrongRoundTripperImpl returned by `CurrentToken` if http.RoundTripper does not implement implWithJWT.
-	ErrWrongRoundTripperImpl = errors.New("RoundTripper does not implement implWithJWT")
+	ErrWrongRoundTripperImpl = errors.New("RoundTripper does not implement OptionRoundtripperFunc")
 )
 
-// Debug is an interface which defines methods to generate a token and get the latest generated token.
-type Debug interface {
-	GenerateToken() error
-	CurrentToken() string
-}
-
-// implWithJWT is a wrapper over http.RoundTripper which adds a valid token to each request.
-type implWithJWT struct {
+type dcosRoundtripper struct {
 	sync.Mutex
 	token                      string
 	expire                     time.Duration
@@ -44,13 +37,19 @@ type implWithJWT struct {
 	transport                  http.RoundTripper
 }
 
+// Debug is an interface which defines methods to generate a token and get the latest generated token.
+type Debug interface {
+	GenerateToken() error
+	CurrentToken() string
+}
+
 // NewRoundTripper returns RoundTripper implementation with JWT handling.
-func NewRoundTripper(rt http.RoundTripper, opts ...Option) (http.RoundTripper, error) {
+func NewRoundTripper(rt http.RoundTripper, opts ...OptionRoundtripperFunc) (http.RoundTripper, error) {
 	if rt == nil {
 		rt = http.DefaultTransport
 	}
 
-	t := &implWithJWT{
+	t := &dcosRoundtripper{
 		transport: rt,
 	}
 
@@ -77,7 +76,7 @@ func NewRoundTripper(rt http.RoundTripper, opts ...Option) (http.RoundTripper, e
 }
 
 // generateToken is a function that generates JWT and makes a POST request to bouncer to sign it.
-func (t *implWithJWT) GenerateToken() error {
+func (t *dcosRoundtripper) GenerateToken() error {
 	t.Lock()
 	defer t.Unlock()
 
@@ -141,14 +140,14 @@ func (t *implWithJWT) GenerateToken() error {
 	return nil
 }
 
-func (t *implWithJWT) CurrentToken() string {
+func (t *dcosRoundtripper) CurrentToken() string {
 	t.Lock()
 	defer t.Unlock()
 	return t.token
 }
 
 // RoundTrip is implementation of RoundTripper interface.
-func (t *implWithJWT) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *dcosRoundtripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// helper function to update `Authorization` header.
 	addAuthToken := func() {
 		if token := t.CurrentToken(); token != "" {
@@ -176,6 +175,9 @@ func (t *implWithJWT) RoundTrip(req *http.Request) (*http.Response, error) {
 
 		addAuthToken()
 		resp, err = t.transport.RoundTrip(req)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return resp, nil
 }
