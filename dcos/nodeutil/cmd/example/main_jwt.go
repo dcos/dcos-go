@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/dcos/dcos-go/dcos"
 	"github.com/dcos/dcos-go/dcos/nodeutil"
 	"github.com/dcos/dcos-go/jwt/transport"
 )
@@ -38,7 +39,7 @@ func main() {
 	}
 	client.Transport = rt
 
-	d, err := nodeutil.NewNodeInfo(client)
+	d, err := nodeutil.NewNodeInfo(client, dcos.RoleMaster)
 	if err != nil {
 		panic(err)
 	}
@@ -48,12 +49,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("IP=%s\n", ip.String())
-
-	r, err := d.Role()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Node's role %s\n", r)
 
 	leader, err := d.IsLeader()
 	if err != nil {

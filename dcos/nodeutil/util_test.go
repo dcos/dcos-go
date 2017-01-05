@@ -11,7 +11,7 @@ import (
 )
 
 func TestDetectIP(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionDetectIP("fixture/detect_ip_good.sh"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionDetectIP("fixture/detect_ip_good.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,77 +28,13 @@ func TestDetectIP(t *testing.T) {
 }
 
 func TestDetectIPFail(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionDetectIP("fixture/detect_ip_bad.sh"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionDetectIP("fixture/detect_ip_bad.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if _, err = d.DetectIP(); err == nil {
 		t.Fatal("Detect ip returned invalid IP address, but test did not fail")
-	}
-}
-
-func TestMasterRole(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionMasterRoleFile("fixture/roles/master"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	role, err := d.Role()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if role != dcos.RoleMaster {
-		t.Fatalf("Expect %s. Got %s", dcos.RoleMaster, role)
-	}
-}
-
-func TestAgentRole(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionAgentRoleFile("fixture/roles/agent"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	role, err := d.Role()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if role != dcos.RoleAgent {
-		t.Fatalf("Expect %s. Got %s", dcos.RoleAgent, role)
-	}
-}
-
-func TestAgentPublicRole(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionAgentPublicRoleFile("fixture/roles/agent_public"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	role, err := d.Role()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if role != dcos.RoleAgentPublic {
-		t.Fatalf("Expect %s. Got %s", dcos.RoleAgentPublic, role)
-	}
-}
-
-func TestRoleFail(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionAgentRoleFile("fixture/roles/agent"), OptionAgentPublicRoleFile("fixture/roles/agent_public"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := d.Role(); err == nil {
-		t.Fatal("Expect error, got nil")
-	}
-
-	d, err = NewNodeInfo(&http.Client{}, OptionMasterRoleFile("fixture/roles/master"), OptionAgentPublicRoleFile("fixture/roles/agent_public"))
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -119,7 +55,7 @@ func TestMesosID(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	d, err := NewNodeInfo(&http.Client{}, OptionMesosStateURL(ts.URL), OptionMasterRoleFile("fixture/roles/master"),
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionMesosStateURL(ts.URL),
 		OptionDetectIP("fixture/detect_ip_good.sh"))
 	if err != nil {
 		t.Fatal(err)
@@ -135,8 +71,8 @@ func TestMesosID(t *testing.T) {
 	}
 
 	// Test agent response
-	d, err = NewNodeInfo(&http.Client{}, OptionMesosStateURL(ts.URL),
-		OptionAgentRoleFile("fixture/roles/agent"), OptionDetectIP("fixture/detect_ip_good.sh"))
+	d, err = NewNodeInfo(&http.Client{}, dcos.RoleAgent, OptionMesosStateURL(ts.URL),
+		OptionDetectIP("fixture/detect_ip_good.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +94,7 @@ func TestMesosIDFail(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	d, err := NewNodeInfo(&http.Client{}, OptionMesosStateURL(ts.URL), OptionMasterRoleFile("fixture/roles/master"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionMesosStateURL(ts.URL))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +105,7 @@ func TestMesosIDFail(t *testing.T) {
 }
 
 func TestIsLeader(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionMasterRoleFile("fixture/roles/master"), OptionLeaderDNSRecord("dcos.io"),
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionLeaderDNSRecord("dcos.io"),
 		OptionDetectIP("fixture/detect_ip_good.sh"))
 	if err != nil {
 		t.Fatal(err)
@@ -182,8 +118,7 @@ func TestIsLeader(t *testing.T) {
 }
 
 func TestClusterID(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionMasterRoleFile("fixture/roles/master"),
-		OptionClusterIDFile("fixture/uuid/cluster-id.good"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionClusterIDFile("fixture/uuid/cluster-id.good"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,8 +134,7 @@ func TestClusterID(t *testing.T) {
 }
 
 func TestClusterIDInvalidUUID(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionMasterRoleFile("fixture/roles/master"),
-		OptionClusterIDFile("fixture/uuid/cluster-id.bad"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionClusterIDFile("fixture/uuid/cluster-id.bad"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +146,7 @@ func TestClusterIDInvalidUUID(t *testing.T) {
 }
 
 func TestClusterIDInvalidRole(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, OptionAgentRoleFile("fixture/roles/agent"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleAgent)
 	if err != nil {
 		t.Fatal(err)
 	}
