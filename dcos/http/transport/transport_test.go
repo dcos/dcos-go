@@ -42,8 +42,8 @@ func TestLoadCAPool(t *testing.T) {
 	}
 }
 
-func TestCreateTransport(t *testing.T) {
-	tr, err := createTransport(CACertPath)
+func TestConfigureTLS(t *testing.T) {
+	tr, err := configureTLS(CACertPath)
 
 	if err != nil {
 		t.Error("Expected no errors, got", err.Error())
@@ -53,7 +53,7 @@ func TestCreateTransport(t *testing.T) {
 		t.Error("Expected skip verify to be false, got true")
 	}
 
-	noVerifyTr, noVerifyErr := createTransport("")
+	noVerifyTr, noVerifyErr := configureTLS("")
 
 	if noVerifyErr != nil {
 		t.Error("Expected no errors, got", noVerifyErr.Error())

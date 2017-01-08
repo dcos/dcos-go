@@ -50,7 +50,7 @@ func loadCAPool(path string) (*x509.CertPool, error) {
 }
 
 // newTransport will return transport for http.Client
-func createTransport(caCertificatePath string) (*http.Transport, error) {
+func configureTLS(caCertificatePath string) (*http.Transport, error) {
 	tr := &http.Transport{}
 	// if user provided CA cert we must use it, otherwise use InsecureSkipVerify: true for all HTTPS requests.
 	if caCertificatePath != "" {
@@ -80,7 +80,7 @@ func NewTransport(clientOptionFuncs ...OptionTransportFunc) (http.RoundTripper, 
 		}
 	}
 
-	tr, err := createTransport(t.CaCertificatePath)
+	tr, err := configureTLS(t.CaCertificatePath)
 	if err != nil {
 		return nil, err
 	}
