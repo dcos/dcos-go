@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/dcos/dcos-go/dcos"
+	"github.com/dcos/dcos-go/dcos/http/transport"
 	"github.com/dcos/dcos-go/dcos/nodeutil"
-	"github.com/dcos/dcos-go/jwt/transport"
 )
 
 var flagIAMConfig = flag.String("iam-config", "", "Path to IAM config")

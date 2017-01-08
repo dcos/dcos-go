@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dcos/dcos-go/jwt/transport"
+	"github.com/dcos/dcos-go/dcos/http/transport"
 )
 
 var (
