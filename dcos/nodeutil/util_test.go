@@ -44,7 +44,7 @@ func TestMesosID(t *testing.T) {
 	  "id": "abc-def",
 	  "slaves": [
 	    {
-	      "hostname": "10.10.0.1",
+	      "pid": "slave(1)@10.10.0.1:5051",
 	      "id": "ghi-jkl"
 	    }
 	  ]
