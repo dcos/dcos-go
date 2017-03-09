@@ -53,6 +53,8 @@ type NodeInfo interface {
 	IsLeader() (bool, error)
 	MesosID(context.Context) (string, error)
 	ClusterID() (string, error)
+	FindMasters(context.Context) ([]net.IP, error)
+	FindAgents(context.Context) ([]net.IP, error)
 }
 
 // dcosInfo is implementation of NodeInfo interface.
@@ -364,6 +366,16 @@ func (d *dcosInfo) ClusterID() (string, error) {
 	}
 
 	return clusterID, nil
+}
+
+// FindMasters returns a list of dicovered DC/OS masters.
+func (d *dcosInfo) FindMasters(ctx context.Context) ([]net.IP, error) {
+	return nil, nil
+}
+
+// FindAgents returns a list of discovered DC/OS agents.
+func (d *dcosInfo) FindAgents(ctx context.Context) ([]net.IP, error) {
+	return nil, nil
 }
 
 // HeaderFromContext returns http.Header from a context if it's found.
