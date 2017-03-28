@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"os/exec"
-	"time"
 )
 
 // dcos-go/exec is a os/exec wrapper. It implements io.Reader and can be used to read both STDOUT and STDERR.
@@ -30,8 +29,7 @@ var ErrInvalidTimeout = errors.New("Timeout cannot be negative or empty")
 //  <context deadline exceeded> means timeout was reached and command was killed.
 //  <context canceled>  means that command was canceled by a user.
 type CommandExecutor struct {
-	Cancel context.CancelFunc
-	Done   chan error
+	Done chan error
 
 	done chan error
 	pipe *io.PipeReader
@@ -39,42 +37,19 @@ type CommandExecutor struct {
 
 // Read implements the io.Reader.
 // CommandExecutor will read from stdout and stderr
-func (c CommandExecutor) Read(p []byte) (int, error) {
+func (c *CommandExecutor) Read(p []byte) (int, error) {
 	return c.pipe.Read(p)
-}
-
-// Option is a functional option that configures a CommandExecutor
-type Option func(*context.Context, *CommandExecutor) error
-
-// Timeout configures a CommandExecutor with a working Cancel func and the given timeout
-func Timeout(timeout time.Duration) Option {
-	return func(ctx *context.Context, ce *CommandExecutor) error {
-		if timeout <= 0 {
-			return ErrInvalidTimeout
-		}
-		newContext, cancel := context.WithTimeout(*ctx, timeout)
-		*ctx = newContext
-		ce.Cancel = cancel
-		return nil
-	}
 }
 
 // Run spawns the given command and returns a handle to the running process in the form
 // of a CommandExecutor.
-func Run(command string, arg []string, options ...Option) (CommandExecutor, error) {
-	// by default Cancel is spineless unless someone configures an option to enable it
-	commandExecutor := CommandExecutor{Cancel: func() {}, Done: make(chan error, 1), done: make(chan error, 1)}
-	ctx := context.Background()
-
-	// apply options to command executor
-	for _, opt := range options {
-		if opt != nil {
-			err := opt(&ctx, &commandExecutor)
-			if err != nil {
-				return CommandExecutor{}, err
-			}
-		}
+func Run(ctx context.Context, command string, arg []string) (*CommandExecutor, error) {
+	if ctx == nil {
+		ctx = context.Background()
 	}
+
+	// by default Cancel is spineless unless someone configures an option to enable it
+	commandExecutor := &CommandExecutor{Done: make(chan error, 1), done: make(chan error, 1)}
 
 	cmd := exec.CommandContext(ctx, command, arg...)
 	go func() {
