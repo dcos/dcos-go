@@ -11,7 +11,9 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ce, err := Run("ls", []string{"-la"}, Timeout(time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	ce, err := Run(ctx, "ls", []string{"-la"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +40,9 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunTimeout(t *testing.T) {
-	ce, err := Run("bash", []string{"./fixture/infinite.sh"}, Timeout(time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	ce, err := Run(ctx, "bash", []string{"./fixture/infinite.sh"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,13 +55,14 @@ func TestRunTimeout(t *testing.T) {
 }
 
 func TestRunCancel(t *testing.T) {
-	ce, err := Run("bash", []string{"./fixture/infinite.sh"}, Timeout(time.Second*5))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ce, err := Run(ctx, "bash", []string{"./fixture/infinite.sh"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	go func() {
 		time.Sleep(time.Second)
-		ce.Cancel()
+		cancel()
 	}()
 	buffer := new(bytes.Buffer)
 	io.Copy(buffer, ce)
@@ -68,7 +73,9 @@ func TestRunCancel(t *testing.T) {
 }
 
 func TestBadReturnCode(t *testing.T) {
-	ce, err := Run("command_no_found", []string{"abc"}, Timeout(time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	ce, err := Run(ctx, "command_no_found", []string{"abc"})
 	if err != nil {
 		t.Fatal(err)
 	}

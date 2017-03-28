@@ -138,7 +138,9 @@ func (d *dcosInfo) DetectIP() (net.IP, error) {
 		return nil, err
 	}
 
-	ce, err := exec.Run(defaultBashPath, []string{d.detectIPLocation}, exec.Timeout(d.detectIPTimeout))
+	ctx, cancel := context.WithTimeout(context.Background(), d.detectIPTimeout)
+	defer cancel()
+	ce, err := exec.Run(ctx, defaultBashPath, []string{d.detectIPLocation})
 	if err != nil {
 		return nil, err
 	}
