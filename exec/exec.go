@@ -1,10 +1,13 @@
 package exec
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"io"
 	"os/exec"
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 // dcos-go/exec is a os/exec wrapper. It implements io.Reader and can be used to read both STDOUT and STDERR.
@@ -78,4 +81,45 @@ func Run(ctx context.Context, command string, arg []string) (*CommandExecutor, e
 	}()
 
 	return commandExecutor, nil
+}
+
+// Output returns stdout, stderr and error status for a given shell command
+func Output(ctx context.Context, command ...string) ([]byte, []byte, error) {
+
+	var (
+		// define an empty cancel function
+		cancel context.CancelFunc = func() {}
+		arg    []string
+	)
+
+	if len(command) == 0 {
+		return nil, nil, errors.New("unable to execute a command with empty Cmd field")
+	}
+
+	if ctx == nil {
+		// default to 10 seconds timeout.
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
+	}
+
+	defer cancel()
+
+	if len(command) > 1 {
+		arg = command[1:]
+	}
+
+	cmd := exec.CommandContext(ctx, command[0], arg...)
+
+	var outbuf, errbuf bytes.Buffer
+	cmd.Stdout = &outbuf
+	cmd.Stderr = &errbuf
+
+	if err := cmd.Start(); err != nil {
+		return nil, nil, errors.Wrapf(err, "unable to run command %s", cmd)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return outbuf.Bytes(), errbuf.Bytes(), err
+	}
+
+	return outbuf.Bytes(), errbuf.Bytes(), nil
 }

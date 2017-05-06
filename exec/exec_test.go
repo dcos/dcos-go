@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -84,5 +85,39 @@ func TestBadReturnCode(t *testing.T) {
 	err = <-ce.Done
 	if !strings.Contains(err.Error(), "command_no_found") {
 		t.Fatalf("Expected `command_no_found` in error output.Got: %s", err)
+	}
+}
+
+func TestOutput(t *testing.T) {
+
+	out, stderr, err := Output(nil, "echo", "hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("output %s %s \n", out, stderr)
+
+	// Expect error
+	output, stderr, errtrue := Output(nil, "ec", "hello")
+	if errtrue == nil {
+		t.Fatal(errtrue)
+	}
+	fmt.Printf("output %s stderr %s %s\n", output, stderr, errtrue)
+}
+
+func TestOutputTimeout(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, _, err := Output(ctx, "sleep", "2")
+	if err == nil {
+		t.Fatal("expect error got nil")
+	}
+}
+
+func TestOutputTimeoutPass(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	_, _, err := Output(ctx, "sleep", "1")
+	if err != nil {
+		t.Fatal(err)
 	}
 }
