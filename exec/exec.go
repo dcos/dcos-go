@@ -21,9 +21,6 @@ import (
 // 	log.Error(err)
 // }
 
-// ErrInvalidTimeout is the error returned by `func Timeout` if a non-positive timeout option specified.
-var ErrInvalidTimeout = errors.New("Timeout cannot be negative or empty")
-
 // CommandExecutor is a structure returned by exec.Run
 // Cancel can be used by a user to interrupt a command execution.
 // Done is a channel the user can read in order to retrieve execution status. Possible statuses:
