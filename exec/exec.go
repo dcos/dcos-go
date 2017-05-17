@@ -111,7 +111,7 @@ func Output(ctx context.Context, command ...string) (stdout []byte, stderr []byt
 	cmd.Stderr = &errbuf
 
 	if err := cmd.Start(); err != nil {
-		return nil, nil, 0, errors.Wrapf(err, "unable to run command %s", cmd)
+		return nil, nil, 0, err
 	}
 
 	err = cmd.Wait()
