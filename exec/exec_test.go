@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -89,25 +88,48 @@ func TestBadReturnCode(t *testing.T) {
 }
 
 func TestOutput(t *testing.T) {
-
-	out, stderr, err := Output(nil, "echo", "hello")
+	stdout, stderr, code, err := Output(nil, "echo", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("output %s %s \n", out, stderr)
+
+	stdoutStr := string(stdout)
+	stderrStr := string(stderr)
+
+	if stdoutStr != "hello\n" {
+		t.Fatalf("expect output hello. Got %s", stdoutStr)
+	}
+
+	if stderrStr != "" {
+		t.Fatalf("expect empty stderr. Got %s", stderrStr)
+	}
+
+	if code != 0 {
+		t.Fatalf("expect exit code 0. Got %d", code)
+	}
 
 	// Expect error
-	output, stderr, errtrue := Output(nil, "ec", "hello")
-	if errtrue == nil {
-		t.Fatal(errtrue)
+	stdout, stderr, code, err = Output(nil, "ec", "hello")
+	if err == nil {
+		t.Fatal("expect error got nil")
 	}
-	fmt.Printf("output %s stderr %s %s\n", output, stderr, errtrue)
+
+	stdoutStr = string(stdout)
+	stderrStr = string(stderr)
+
+	if stdoutStr != "" || stderrStr != "" {
+		t.Fatalf("stdout and stderr must be empty. Got %s, %s", stdoutStr, stderrStr)
+	}
+
+	if code != 0 {
+		t.Fatalf("expect exit code 0. Got %d", code)
+	}
 }
 
 func TestOutputTimeout(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Microsecond*100)
 	defer cancel()
-	_, _, err := Output(ctx, "sleep", "2")
+	_, _, _, err := Output(ctx, "sleep", "10")
 	if err == nil {
 		t.Fatal("expect error got nil")
 	}
@@ -116,8 +138,19 @@ func TestOutputTimeout(t *testing.T) {
 func TestOutputTimeoutPass(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	_, _, err := Output(ctx, "sleep", "1")
+	_, _, _, err := Output(ctx, "sleep", "1")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("expect nil error. Got %s", err)
+	}
+}
+
+func TestReturnCode(t *testing.T) {
+	_, _, code, err := Output(context.TODO(), "/bin/bash", "./fixture/return-err.sh")
+	if err != nil {
+		t.Fatalf("expect nil error. Got %s", err)
+	}
+
+	if code != 10 {
+		t.Fatalf("expect return code 10. Got %d", code)
 	}
 }
