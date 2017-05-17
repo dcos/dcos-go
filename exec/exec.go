@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,9 +21,6 @@ import (
 // if err != nil {
 // 	log.Error(err)
 // }
-
-// ErrInvalidTimeout is the error returned by `func Timeout` if a non-positive timeout option specified.
-var ErrInvalidTimeout = errors.New("Timeout cannot be negative or empty")
 
 // CommandExecutor is a structure returned by exec.Run
 // Cancel can be used by a user to interrupt a command execution.
@@ -83,17 +81,18 @@ func Run(ctx context.Context, command string, arg []string) (*CommandExecutor, e
 	return commandExecutor, nil
 }
 
-// Output returns stdout, stderr and error status for a given shell command
-func Output(ctx context.Context, command ...string) ([]byte, []byte, error) {
+// Output returns stdout, stderr, exit code and error status for a given shell command
+func Output(ctx context.Context, command ...string) (stdout []byte, stderr []byte, code int, err error) {
 
 	var (
 		// define an empty cancel function
-		cancel context.CancelFunc = func() {}
-		arg    []string
+		cancel         context.CancelFunc = func() {}
+		arg            []string
+		outbuf, errbuf bytes.Buffer
 	)
 
 	if len(command) == 0 {
-		return nil, nil, errors.New("unable to execute a command with empty Cmd field")
+		return nil, nil, 0, errors.New("unable to execute a command with empty Cmd field")
 	}
 
 	if ctx == nil {
@@ -108,18 +107,39 @@ func Output(ctx context.Context, command ...string) ([]byte, []byte, error) {
 	}
 
 	cmd := exec.CommandContext(ctx, command[0], arg...)
-
-	var outbuf, errbuf bytes.Buffer
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 
 	if err := cmd.Start(); err != nil {
-		return nil, nil, errors.Wrapf(err, "unable to run command %s", cmd)
+		return nil, nil, 0, errors.Wrapf(err, "unable to run command %s", cmd)
 	}
 
-	if err := cmd.Wait(); err != nil {
-		return outbuf.Bytes(), errbuf.Bytes(), err
+	err = cmd.Wait()
+	code, err = exitCode(err)
+	stdout = outbuf.Bytes()
+	stderr = errbuf.Bytes()
+
+	return stdout, stderr, code, err
+}
+
+// exitCode takes an error and checks if it's a read error or program had non zero exit code.
+// The output is the return value and error. The return value must be treated as a real return code value
+// only if error is nil. If error is not nil, it means it's a real error.
+func exitCode(e error) (int, error) {
+	if e == nil {
+		return 0, nil
 	}
 
-	return outbuf.Bytes(), errbuf.Bytes(), nil
+	// check if error contains program exit code
+	if exiterr, ok := e.(*exec.ExitError); ok {
+		if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+			// when a program exceeded timeout it will be terminated
+			// and the code -1 will be set.
+			if status.ExitStatus() != -1 {
+				return status.ExitStatus(), nil
+			}
+		}
+	}
+
+	return 0, e
 }
