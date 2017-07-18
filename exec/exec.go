@@ -7,8 +7,6 @@ import (
 	"os/exec"
 	"syscall"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // dcos-go/exec is a os/exec wrapper. It implements io.Reader and can be used to read both STDOUT and STDERR.
@@ -81,45 +79,49 @@ func Run(ctx context.Context, command string, arg []string) (*CommandExecutor, e
 	return commandExecutor, nil
 }
 
-// Output returns stdout, stderr, exit code and error status for a given shell command
-func Output(ctx context.Context, command ...string) (stdout []byte, stderr []byte, code int, err error) {
-
-	var (
-		// define an empty cancel function
-		cancel         context.CancelFunc = func() {}
-		arg            []string
-		outbuf, errbuf bytes.Buffer
-	)
-
+func commandParts(command ...string) (name string, arg []string) {
 	if len(command) == 0 {
-		return nil, nil, 0, errors.New("unable to execute a command with empty Cmd field")
+		panic("empty command")
 	}
+	return command[0], command[1:]
+}
 
-	if ctx == nil {
-		// default to 10 seconds timeout.
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
-	}
+// Command returns a Cmd from a shell command.
+func Command(command ...string) *exec.Cmd {
+	name, arg := commandParts(command...)
+	return exec.Command(name, arg...)
+}
 
-	defer cancel()
+// CommandContext returns a Cmd with the given context and shell command.
+func CommandContext(ctx context.Context, command ...string) *exec.Cmd {
+	name, arg := commandParts(command...)
+	return exec.CommandContext(ctx, name, arg...)
+}
 
-	if len(command) > 1 {
-		arg = command[1:]
-	}
+// FullOutput runs a command and returns its stdout, stderr, exit code, and error status.
+func FullOutput(c *exec.Cmd) (stdout []byte, stderr []byte, code int, err error) {
+	var outbuf, errbuf bytes.Buffer
 
-	cmd := exec.CommandContext(ctx, command[0], arg...)
-	cmd.Stdout = &outbuf
-	cmd.Stderr = &errbuf
+	c.Stdout = &outbuf
+	c.Stderr = &errbuf
 
-	if err := cmd.Start(); err != nil {
+	if err := c.Start(); err != nil {
 		return nil, nil, 0, err
 	}
 
-	err = cmd.Wait()
+	err = c.Wait()
 	code, err = exitCode(err)
 	stdout = outbuf.Bytes()
 	stderr = errbuf.Bytes()
 
 	return stdout, stderr, code, err
+}
+
+// SimpleFullOutput runs a shell command with a timeout and returns its stdout, stderr, exit code, and error status.
+func SimpleFullOutput(timeout time.Duration, command ...string) (stdout []byte, stderr []byte, code int, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return FullOutput(CommandContext(ctx, command...))
 }
 
 // exitCode takes an error and checks if it's a read error or program had non zero exit code.
