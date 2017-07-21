@@ -87,8 +87,8 @@ func TestBadReturnCode(t *testing.T) {
 	}
 }
 
-func TestOutput(t *testing.T) {
-	stdout, stderr, code, err := Output(nil, "echo", "hello")
+func TestSimpleFullOutput(t *testing.T) {
+	stdout, stderr, code, err := SimpleFullOutput(time.Second*10, "echo", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestOutput(t *testing.T) {
 	}
 
 	// Expect error
-	stdout, stderr, code, err = Output(nil, "ec", "hello")
+	stdout, stderr, code, err = SimpleFullOutput(time.Second*10, "ec", "hello")
 	if err == nil {
 		t.Fatal("expect error got nil")
 	}
@@ -126,26 +126,22 @@ func TestOutput(t *testing.T) {
 	}
 }
 
-func TestOutputTimeout(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Microsecond*100)
-	defer cancel()
-	_, _, _, err := Output(ctx, "sleep", "10")
+func TestSimpleFullOutputTimeout(t *testing.T) {
+	_, _, _, err := SimpleFullOutput(time.Microsecond*100, "sleep", "10")
 	if err == nil {
 		t.Fatal("expect error got nil")
 	}
 }
 
-func TestOutputTimeoutPass(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	_, _, _, err := Output(ctx, "sleep", "1")
+func TestSimpleFullOutputTimeoutPass(t *testing.T) {
+	_, _, _, err := SimpleFullOutput(time.Second*10, "sleep", "1")
 	if err != nil {
 		t.Fatalf("expect nil error. Got %s", err)
 	}
 }
 
 func TestReturnCode(t *testing.T) {
-	_, _, code, err := Output(context.TODO(), "/bin/bash", "./fixture/return-err.sh")
+	_, _, code, err := SimpleFullOutput(time.Second*10, "/bin/bash", "./fixture/return-err.sh")
 	if err != nil {
 		t.Fatalf("expect nil error. Got %s", err)
 	}
