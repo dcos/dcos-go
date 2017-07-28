@@ -18,21 +18,21 @@ Pull requests should adhere to the following guidelines:
 * Each commit in the changeset should have a description as well as be focused on one thing.
 * Code must be tested
 * Code should be written with care to allow for non-breaking changes going forward
-* If introducing a new package, the package should have a descriptive README.
+* If introducing a new package, the package should have a `doc.go` file which describes the purpose of the package.
 * Try not to introduce external dependencies unless necessary.
-
-[Collin](mailto:cvandyck@mesosphere.com) is currently the temporary maintainer of this project. If you have questions about contributing please feel free to contact him or post on the mailing list.
 
 ## External Libraries
 
 It's somewhat difficult to only rely on the Go stdlib when creating shared libraries.  Certainly if one is already used in the repository do not introduce a new one that does the same thing if at all possible.
 
-Going forward we will be creating guidelines for vendoring dependencies in this project.  
+Going forward we will be creating guidelines for vendoring dependencies in this project.  You can track the progress of this effort by following [this ticket](https://jira.mesosphere.com/browse/DCOS_OSS-1474).
 
 ## Packages In This Library
 - [jwt/transport](/jwt/transport/README.md) : JWT token support.
 - [store](/store/README.md) : In-Memory key/value store.
 - [dcos/nodeutil](/dcos/nodeutil/README.md) : Interact with DC/OS services and variables
+
+Note that this package list is manually updated in this README.  There is some discussion about automating this process.  You can track the progress of this effort by following [this ticket](https://jira.mesosphere.com/browse/DCOS_OSS-1475).
 
 ## OSS Projects Using This Library
 - [dcos-log](https://github.com/dcos/dcos-log)
