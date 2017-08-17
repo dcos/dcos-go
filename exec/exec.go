@@ -12,12 +12,18 @@ import (
 // dcos-go/exec is a os/exec wrapper. It implements io.Reader and can be used to read both STDOUT and STDERR.
 //
 // Usage:
-// ce := exec.Run("bash", []string{"infinite.sh"}, exec.Timeout(3 * time.Second))
+// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+// defer cancel()
+//
+// ce, err := exec.Run(ctx, "bash", []string{"infinite.sh"})
+// if err != nil {
+// 	log.Fatal(err)
+// }
 //
 // io.Copy(os.Stdout, ce)
-// err := <- ce.Done
+// err = <- ce.Done
 // if err != nil {
-// 	log.Error(err)
+// 	log.Fatal(err)
 // }
 
 // CommandExecutor is a structure returned by exec.Run
