@@ -5,15 +5,53 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
+func getDefaultShellPath() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "powershell.exe"
+	default:
+		return "/bin/bash"
+	}
+}
+
+func getFixture(name string) string {
+	switch runtime.GOOS {
+	case "windows":
+		return "fixture/" + name + ".ps1"
+	default:
+		return "fixture/" + name + ".sh"
+	}
+}
+
+func getLsCmd() string {
+	switch runtime.GOOS {
+	case "windows":
+		return getDefaultShellPath()
+	default:
+		return "ls"
+	}
+}
+
+func getLsParams() []string {
+	switch runtime.GOOS {
+	case "windows":
+		return []string{"Get-ChildItem"}
+	default:
+		return []string{"-la"}
+	}
+}
+
 func TestRun(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	ce, err := Run(ctx, "ls", []string{"-la"})
+	ce, err := Run(ctx, getLsCmd(), getLsParams())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +80,7 @@ func TestRun(t *testing.T) {
 func TestRunTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	ce, err := Run(ctx, "bash", []string{"./fixture/infinite.sh"})
+	ce, err := Run(ctx, getDefaultShellPath(), []string{getFixture("infinite")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +94,7 @@ func TestRunTimeout(t *testing.T) {
 
 func TestRunCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	ce, err := Run(ctx, "bash", []string{"./fixture/infinite.sh"})
+	ce, err := Run(ctx, getDefaultShellPath(), []string{getFixture("infinite")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,8 +125,26 @@ func TestBadReturnCode(t *testing.T) {
 	}
 }
 
+func getEchoCommand() string {
+	switch runtime.GOOS {
+	case "windows":
+		return getDefaultShellPath()
+	default:
+		return "echo"
+	}
+}
+
+func getEchoCommandParameters() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "write-host hello"
+	default:
+		return "hello"
+	}
+}
+
 func TestSimpleFullOutput(t *testing.T) {
-	stdout, stderr, code, err := SimpleFullOutput(time.Second*10, "echo", "hello")
+	stdout, stderr, code, err := SimpleFullOutput(time.Second*10, getEchoCommand(), getEchoCommandParameters())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,22 +182,40 @@ func TestSimpleFullOutput(t *testing.T) {
 	}
 }
 
+func getSleepCommand() string {
+	switch runtime.GOOS {
+	case "windows":
+		return getDefaultShellPath()
+	default:
+		return "sleep"
+	}
+}
+
+func getSleepParameters(sleep int) string {
+	switch runtime.GOOS {
+	case "windows":
+		return "start-sleep " + strconv.FormatInt(int64(sleep), 10)
+	default:
+		return strconv.FormatInt(int64(sleep), 10)
+	}
+}
+
 func TestSimpleFullOutputTimeout(t *testing.T) {
-	_, _, _, err := SimpleFullOutput(time.Microsecond*100, "sleep", "10")
+	_, _, _, err := SimpleFullOutput(time.Microsecond*100, getSleepCommand(), getSleepParameters(10))
 	if err == nil {
 		t.Fatal("expect error got nil")
 	}
 }
 
 func TestSimpleFullOutputTimeoutPass(t *testing.T) {
-	_, _, _, err := SimpleFullOutput(time.Second*10, "sleep", "1")
+	_, _, _, err := SimpleFullOutput(time.Second*10, getSleepCommand(), getSleepParameters(1))
 	if err != nil {
 		t.Fatalf("expect nil error. Got %s", err)
 	}
 }
 
 func TestReturnCode(t *testing.T) {
-	_, _, code, err := SimpleFullOutput(time.Second*10, "/bin/bash", "./fixture/return-err.sh")
+	_, _, code, err := SimpleFullOutput(time.Second*10, getDefaultShellPath(), getFixture("return-err"))
 	if err != nil {
 		t.Fatalf("expect nil error. Got %s", err)
 	}

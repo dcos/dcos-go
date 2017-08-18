@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,9 +22,7 @@ import (
 )
 
 const (
-	defaultExecTimeout       = 10 * time.Second
-	defaultClusterIDLocation = "/var/lib/dcos/cluster-id"
-	defaultBashPath          = "/bin/bash"
+	defaultExecTimeout = 10 * time.Second
 )
 
 // ErrTaskNotFound is return if the canonical ID for a given task not found.
@@ -91,6 +90,24 @@ type dcosInfo struct {
 	clusterIDLocation string
 }
 
+func getDefaultShellPath() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "powershell.exe"
+	default:
+		return "/bin/bash"
+	}
+}
+
+func getClusterIDLocation() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "/mesos/var/lib/dcos/cluster-id"
+	default:
+		return "/var/lib/dcos/cluster-id"
+	}
+}
+
 // NewNodeInfo returns a new instance of NodeInfo implementation.
 func NewNodeInfo(client *http.Client, role string, options ...Option) (NodeInfo, error) {
 	if client == nil {
@@ -117,11 +134,11 @@ func NewNodeInfo(client *http.Client, role string, options ...Option) (NodeInfo,
 		client:            client,
 		role:              role,
 		cache:             true,
-		detectIPLocation:  dcos.FileDetectIP,
+		detectIPLocation:  dcos.GetFileDetectIPLocation(),
 		detectIPTimeout:   defaultExecTimeout,
 		dnsRecordLeader:   dcos.DNSRecordLeader,
 		mesosStateURL:     defaultStateURL.String(),
-		clusterIDLocation: defaultClusterIDLocation,
+		clusterIDLocation: getClusterIDLocation(),
 	}
 
 	// update parameters with a caller input.
@@ -154,7 +171,7 @@ func (d *dcosInfo) DetectIP() (net.IP, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), d.detectIPTimeout)
 	defer cancel()
-	ce, err := exec.Run(ctx, defaultBashPath, []string{d.detectIPLocation})
+	ce, err := exec.Run(ctx, getDefaultShellPath(), []string{d.detectIPLocation})
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +189,12 @@ func (d *dcosInfo) DetectIP() (net.IP, error) {
 	// strip the trailing \n
 	detectedIP := string(bytes.TrimSpace(buf))
 	if detectedIP == "" {
-		return nil, ErrNodeInfo{fmt.Sprintf("command %s return empty output", dcos.FileDetectIP)}
+		return nil, ErrNodeInfo{fmt.Sprintf("command %s return empty output", dcos.GetFileDetectIPLocation())}
 	}
 
 	validIP := net.ParseIP(detectedIP)
 	if validIP == nil {
-		return nil, ErrNodeInfo{fmt.Sprintf("command %s returned invalid IP address %s", dcos.FileDetectIP, detectedIP)}
+		return nil, ErrNodeInfo{fmt.Sprintf("command %s returned invalid IP address %s", dcos.GetFileDetectIPLocation(), detectedIP)}
 	}
 
 	// save retrieved IP address to cache.
