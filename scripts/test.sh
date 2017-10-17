@@ -99,6 +99,8 @@ function main {
     govendor fetch github.com/dgrijalva/jwt-go/^::gopkg.in/dgrijalva/jwt-go.v2
     govendor fetch github.com/pkg/errors
 
+    docker
+
     _gofmt
     _goimports
     _golint
