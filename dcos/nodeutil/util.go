@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -24,6 +25,9 @@ const (
 	defaultClusterIDLocation = "/var/lib/dcos/cluster-id"
 	defaultBashPath          = "/bin/bash"
 )
+
+// ErrTaskNotFound is return if the canonical ID for a given task not found.
+var ErrTaskNotFound = errors.New("task not found")
 
 var defaultStateURL = url.URL{
 	Scheme: "http",
@@ -53,6 +57,15 @@ type NodeInfo interface {
 	IsLeader() (bool, error)
 	MesosID(context.Context) (string, error)
 	ClusterID() (string, error)
+	TaskCanonicalID(context.Context, string) (*CanonicalTaskID, error)
+}
+
+// CanonicalTaskID is a unique task id.
+type CanonicalTaskID struct {
+	AgentID      string
+	FrameworkID  string
+	ExecutorID   string
+	ContainerIDs []string
 }
 
 // dcosInfo is implementation of NodeInfo interface.
@@ -355,13 +368,54 @@ func (d *dcosInfo) state(ctx context.Context) (state State, err error) {
 		return state, ErrNodeInfo{fmt.Sprintf("GET request to %s returned response code %d", d.mesosStateURL, resp.StatusCode)}
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	err = json.NewDecoder(resp.Body).Decode(&state)
+	return state, err
+}
+
+// TaskCanonicalID return a CanonicalTaskID for a given task.
+func (d *dcosInfo) TaskCanonicalID(ctx context.Context, task string) (*CanonicalTaskID, error) {
+	state, err := d.state(ctx)
 	if err != nil {
-		return state, err
+		return nil, err
 	}
 
-	err = json.Unmarshal(body, &state)
-	return state, err
+	var foundTasks []Task
+	for _, framework := range state.Frameworks {
+		for _, t := range framework.Tasks {
+			if t.Name != task && !strings.Contains(t.ID, task) {
+				continue
+			}
+			foundTasks = append(foundTasks, t)
+		}
+	}
+
+	if len(foundTasks) == 0 {
+		return nil, ErrTaskNotFound
+	} else if len(foundTasks) > 1 {
+		var taskIDs []string
+		for _, task := range foundTasks {
+			taskIDs = append(taskIDs, task.ID)
+		}
+		return nil, fmt.Errorf("found more then 1 task with name %s: %s", task, taskIDs)
+	}
+
+	t := foundTasks[0]
+	containerIDs, err := t.ContainerIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	executorID := t.ExecutorID
+	if executorID == "" {
+		executorID = t.ID
+	}
+
+	return &CanonicalTaskID{
+		AgentID:      t.SlaveID,
+		FrameworkID:  t.FrameworkID,
+		ExecutorID:   executorID,
+		ContainerIDs: containerIDs,
+	}, nil
 }
 
 // HeaderFromContext returns http.Header from a context if it's found.
