@@ -7,7 +7,7 @@
 _obj
 _test
 build/
-vendor/
+/vendor/
 
 # Architecture specific extensions/prefixes
 *.[568vq]
