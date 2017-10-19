@@ -240,44 +240,8 @@ func (d *dcosInfo) MesosID(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest("GET", d.mesosStateURL, nil)
+	state, err := d.state(ctx)
 	if err != nil {
-		return "", err
-	}
-
-	if ctx != nil {
-		if header, ok := HeaderFromContext(ctx); ok {
-			req.Header = header
-		}
-		req = req.WithContext(ctx)
-	}
-
-	resp, err := d.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", ErrNodeInfo{fmt.Sprintf("GET request to %s returned response code %d", d.mesosStateURL, resp.StatusCode)}
-	}
-
-	type stateJSON struct {
-		// top level ID is used for mesos master ID.
-		ID     string `json:"id"`
-		Slaves []struct {
-			ID  string `json:"id"`
-			Pid string `json:"pid"`
-		} `json:"slaves"`
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var state stateJSON
-	if err := json.Unmarshal(body, &state); err != nil {
 		return "", err
 	}
 
@@ -366,6 +330,38 @@ func (d *dcosInfo) ClusterID() (string, error) {
 	}
 
 	return clusterID, nil
+}
+
+func (d *dcosInfo) state(ctx context.Context) (state State, err error) {
+	req, err := http.NewRequest("GET", d.mesosStateURL, nil)
+	if err != nil {
+		return state, err
+	}
+
+	if ctx != nil {
+		if header, ok := HeaderFromContext(ctx); ok {
+			req.Header = header
+		}
+		req = req.WithContext(ctx)
+	}
+
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return state, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return state, ErrNodeInfo{fmt.Sprintf("GET request to %s returned response code %d", d.mesosStateURL, resp.StatusCode)}
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return state, err
+	}
+
+	err = json.Unmarshal(body, &state)
+	return state, err
 }
 
 // HeaderFromContext returns http.Header from a context if it's found.
