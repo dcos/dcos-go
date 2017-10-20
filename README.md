@@ -31,6 +31,7 @@ Going forward we will be creating guidelines for vendoring dependencies in this 
 - [jwt/transport](/jwt/transport/README.md) : JWT token support.
 - [store](/store/README.md) : In-Memory key/value store.
 - [dcos/nodeutil](/dcos/nodeutil/README.md) : Interact with DC/OS services and variables
+- [zk](/zk) : Provide a simple client for Zookeeper.
 
 Note that this package list is manually updated in this README.  There is some discussion about automating this process.  You can track the progress of this effort by following [this ticket](https://jira.mesosphere.com/browse/DCOS_OSS-1475).
 
