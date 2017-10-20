@@ -54,7 +54,7 @@ function _govet {
 
 
 function _unittest_with_coverage {
-    local covermode="count"
+    local covermode="atomic"
     logmsg "Running unit tests ..."
 
     go get -u github.com/jstemmer/go-junit-report
