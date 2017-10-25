@@ -62,6 +62,7 @@ type NodeInfo interface {
 
 // CanonicalTaskID is a unique task id.
 type CanonicalTaskID struct {
+	ID           string
 	AgentID      string
 	FrameworkID  string
 	ExecutorID   string
@@ -405,15 +406,11 @@ func (d *dcosInfo) TaskCanonicalID(ctx context.Context, task string) (*Canonical
 		return nil, err
 	}
 
-	executorID := t.ExecutorID
-	if executorID == "" {
-		executorID = t.ID
-	}
-
 	return &CanonicalTaskID{
+		ID:           t.ID,
 		AgentID:      t.SlaveID,
 		FrameworkID:  t.FrameworkID,
-		ExecutorID:   executorID,
+		ExecutorID:   t.ExecutorID,
 		ContainerIDs: containerIDs,
 	}, nil
 }
