@@ -162,44 +162,50 @@ func TestClusterIDInvalidRole(t *testing.T) {
 }
 
 func TestMesosRuntimeShortCanonicalID(t *testing.T) {
+	expectedID := ""
 	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
 	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
-	expectedExecutorID := "single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8"
+	expectedExecutorID := ""
 	expectedContainerID := "1a69d257-48ca-4d3b-aead-332ad881fcc7"
 
-	if err := testCanonicalID("single-mesos-container", expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID); err != nil {
+	if err := testCanonicalID("single-mesos-container", expectedID, expectedAgentID, expectedFrameworkID,
+		expectedExecutorID, expectedContainerID); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMesosRuntimeLongCanonicalID(t *testing.T) {
+	expectedID := ""
 	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
 	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
-	expectedExecutorID := "single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8"
+	expectedExecutorID := ""
 	expectedContainerID := "1a69d257-48ca-4d3b-aead-332ad881fcc7"
-	if err := testCanonicalID("single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8", expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID); err != nil {
+	if err := testCanonicalID("single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8", expectedID,
+		expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCanonicalTaskIDNotFound(t *testing.T) {
-	if err := testCanonicalID("foobar", "", "", "", ""); err != ErrTaskNotFound {
+	if err := testCanonicalID("foobar", "", "", "", "", ""); err != ErrTaskNotFound {
 		t.Fatalf("error must be %s. Got %s", ErrTaskNotFound, err)
 	}
 }
 
 func TestPodCanonicalID(t *testing.T) {
+	expectedID := ""
 	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
 	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
 	expectedExecutorID := "instance-parent-pod.da6ef080-b81f-11e7-a9ac-52ad791ffaa8"
 	expectedContainerID := "e7ed292a-8390-4da4-8c2a-c13b554e2c2a-1eb53d03-e8f2-4de7-8a51-be17b42a3a29"
-	if err := testCanonicalID("container-1", expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID); err != nil {
+	if err := testCanonicalID("container-1", expectedID, expectedAgentID, expectedFrameworkID, expectedExecutorID,
+		expectedContainerID); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCanonicalIDSameNameTasks(t *testing.T) {
-	err := testCanonicalID("test123", "", "", "", "")
+	err := testCanonicalID("test123", "", "", "", "", "")
 	if err == nil {
 		t.Fatal("expecting error. Got nil")
 	}
@@ -210,7 +216,7 @@ func TestCanonicalIDSameNameTasks(t *testing.T) {
 	}
 }
 
-func testCanonicalID(task, expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID string) error {
+func testCanonicalID(task, expectedID, expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID string) error {
 	state, err := ioutil.ReadFile("fixture/state.json")
 	if err != nil {
 		return err
