@@ -24,7 +24,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 // ErrTokenRefresh is an error type returned by `RoundTrip` if the bouncer response was not 200.
@@ -96,12 +97,19 @@ func (t *dcosRoundtripper) GenerateToken() error {
 	t.Lock()
 	defer t.Unlock()
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"uid": t.uid,
-		"exp": time.Now().Add(t.expire).Unix(),
-	})
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: t.secret}, (&jose.SignerOptions{}).WithType("JWT"))
+	if err != nil {
+		return err
+	}
 
-	tokenStr, err := token.SignedString(t.secret)
+	cl := struct {
+		UID string `json:"uid"`
+		Exp int64  `json:"exp"`
+	}{
+		t.uid,
+		time.Now().Add(t.expire).Unix(),
+	}
+	tokenStr, err := jwt.Signed(sig).Claims(cl).CompactSerialize()
 	if err != nil {
 		return err
 	}
