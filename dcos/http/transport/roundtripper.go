@@ -16,6 +16,7 @@ package transport
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,10 +46,11 @@ var (
 
 type dcosRoundtripper struct {
 	sync.Mutex
-	token                      string
-	expire                     time.Duration
-	uid, secret, loginEndpoint string
-	transport                  http.RoundTripper
+	token              string
+	expire             time.Duration
+	uid, loginEndpoint string
+	secret             *rsa.PrivateKey
+	transport          http.RoundTripper
 }
 
 // Debug is an interface which defines methods to generate a token and get the latest generated token.
@@ -94,12 +96,12 @@ func (t *dcosRoundtripper) GenerateToken() error {
 	t.Lock()
 	defer t.Unlock()
 
-	// TODO: this is very broken with the latest `jwt-go` lib version 3.0.0
-	token := jwt.New(jwt.SigningMethodRS256)
-	token.Claims["uid"] = t.uid
-	token.Claims["exp"] = time.Now().Add(t.expire).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"uid": t.uid,
+		"exp": time.Now().Add(t.expire).Unix(),
+	})
 
-	tokenStr, err := token.SignedString([]byte(t.secret))
+	tokenStr, err := token.SignedString(t.secret)
 	if err != nil {
 		return err
 	}

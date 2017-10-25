@@ -20,6 +20,8 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 var (
@@ -86,7 +88,11 @@ func OptionCredentials(uid, secret, loginEndpoint string) OptionRoundtripperFunc
 			return ErrInvalidCredentials
 		}
 		j.uid = uid
-		j.secret = secret
+		var err error
+		j.secret, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(secret))
+		if err != nil {
+			return ErrInvalidCredentials
+		}
 		j.loginEndpoint = loginEndpoint
 		return nil
 	}
