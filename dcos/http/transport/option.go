@@ -15,13 +15,14 @@
 package transport
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"io/ioutil"
 	"os"
 	"time"
-
-	jwt "github.com/dgrijalva/jwt-go"
 )
 
 var (
@@ -88,13 +89,22 @@ func OptionCredentials(uid, secret, loginEndpoint string) OptionRoundtripperFunc
 			return ErrInvalidCredentials
 		}
 		j.uid = uid
-		var err error
-		j.secret, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(secret))
+		j.loginEndpoint = loginEndpoint
+
+		block, _ := pem.Decode([]byte(secret))
+		if block == nil {
+			return ErrInvalidCredentials
+		}
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return ErrInvalidCredentials
 		}
-		j.loginEndpoint = loginEndpoint
-		return nil
+		if key, ok := key.(*rsa.PrivateKey); ok {
+			j.secret = key
+			return nil
+		}
+
+		return ErrInvalidCredentials
 	}
 }
 

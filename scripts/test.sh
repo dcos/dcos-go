@@ -96,7 +96,8 @@ function main {
     # Dependencies required for testing
     go get -u github.com/kardianos/govendor
     govendor init
-    govendor fetch github.com/dgrijalva/jwt-go@v3.1.0
+    govendor fetch gopkg.in/square/go-jose.v2
+    govendor fetch gopkg.in/square/go-jose.v2/jwt
     govendor fetch github.com/pkg/errors
 
     _gofmt
