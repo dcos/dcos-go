@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -24,6 +25,9 @@ const (
 	defaultClusterIDLocation = "/var/lib/dcos/cluster-id"
 	defaultBashPath          = "/bin/bash"
 )
+
+// ErrTaskNotFound is return if the canonical ID for a given task not found.
+var ErrTaskNotFound = errors.New("task not found")
 
 var defaultStateURL = url.URL{
 	Scheme: "http",
@@ -53,6 +57,15 @@ type NodeInfo interface {
 	IsLeader() (bool, error)
 	MesosID(context.Context) (string, error)
 	ClusterID() (string, error)
+	TaskCanonicalID(context.Context, string) (*CanonicalTaskID, error)
+}
+
+// CanonicalTaskID is a unique task id.
+type CanonicalTaskID struct {
+	AgentID      string
+	FrameworkID  string
+	ExecutorID   string
+	ContainerIDs []string
 }
 
 // dcosInfo is implementation of NodeInfo interface.
@@ -240,44 +253,8 @@ func (d *dcosInfo) MesosID(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest("GET", d.mesosStateURL, nil)
+	state, err := d.state(ctx)
 	if err != nil {
-		return "", err
-	}
-
-	if ctx != nil {
-		if header, ok := HeaderFromContext(ctx); ok {
-			req.Header = header
-		}
-		req = req.WithContext(ctx)
-	}
-
-	resp, err := d.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", ErrNodeInfo{fmt.Sprintf("GET request to %s returned response code %d", d.mesosStateURL, resp.StatusCode)}
-	}
-
-	type stateJSON struct {
-		// top level ID is used for mesos master ID.
-		ID     string `json:"id"`
-		Slaves []struct {
-			ID  string `json:"id"`
-			Pid string `json:"pid"`
-		} `json:"slaves"`
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var state stateJSON
-	if err := json.Unmarshal(body, &state); err != nil {
 		return "", err
 	}
 
@@ -366,6 +343,79 @@ func (d *dcosInfo) ClusterID() (string, error) {
 	}
 
 	return clusterID, nil
+}
+
+func (d *dcosInfo) state(ctx context.Context) (state State, err error) {
+	req, err := http.NewRequest("GET", d.mesosStateURL, nil)
+	if err != nil {
+		return state, err
+	}
+
+	if ctx != nil {
+		if header, ok := HeaderFromContext(ctx); ok {
+			req.Header = header
+		}
+		req = req.WithContext(ctx)
+	}
+
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return state, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return state, ErrNodeInfo{fmt.Sprintf("GET request to %s returned response code %d", d.mesosStateURL, resp.StatusCode)}
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&state)
+	return state, err
+}
+
+// TaskCanonicalID return a CanonicalTaskID for a given task.
+func (d *dcosInfo) TaskCanonicalID(ctx context.Context, task string) (*CanonicalTaskID, error) {
+	state, err := d.state(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var foundTasks []Task
+	for _, framework := range state.Frameworks {
+		for _, t := range framework.Tasks {
+			if t.Name != task && !strings.Contains(t.ID, task) {
+				continue
+			}
+			foundTasks = append(foundTasks, t)
+		}
+	}
+
+	if len(foundTasks) == 0 {
+		return nil, ErrTaskNotFound
+	} else if len(foundTasks) > 1 {
+		var taskIDs []string
+		for _, task := range foundTasks {
+			taskIDs = append(taskIDs, task.ID)
+		}
+		return nil, fmt.Errorf("found more then 1 task with name %s: %s", task, taskIDs)
+	}
+
+	t := foundTasks[0]
+	containerIDs, err := t.ContainerIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	executorID := t.ExecutorID
+	if executorID == "" {
+		executorID = t.ID
+	}
+
+	return &CanonicalTaskID{
+		AgentID:      t.SlaveID,
+		FrameworkID:  t.FrameworkID,
+		ExecutorID:   executorID,
+		ContainerIDs: containerIDs,
+	}, nil
 }
 
 // HeaderFromContext returns http.Header from a context if it's found.

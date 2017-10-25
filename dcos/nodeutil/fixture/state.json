@@ -1,0 +1,562 @@
+{
+  "version": "1.5.0",
+  "git_sha": "09df58e9a83dbebf1ae8b32c28cb450294d92612",
+  "build_date": "2017-10-10 20:35:00",
+  "build_time": 1507667700,
+  "build_user": "",
+  "start_time": 1508783004.30362,
+  "elected_time": 1508783004.37298,
+  "id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca",
+  "pid": "master@10.0.4.125:5050",
+  "hostname": "10.0.4.125",
+  "activated_slaves": 2,
+  "deactivated_slaves": 0,
+  "unreachable_slaves": 0,
+  "leader": "master@10.0.4.125:5050",
+  "leader_info": {
+    "id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca",
+    "pid": "master@10.0.4.125:5050",
+    "port": 5050,
+    "hostname": "10.0.4.125"
+  },
+  "cluster": "mnaboka-ewam5mm",
+  "external_log_file": "/var/lib/dcos/mesos/log/mesos-master.log",
+  "flags": {
+    "agent_ping_timeout": "15secs",
+    "slave_removal_rate_limit": "1/20mins",
+    "agent_reregister_timeout": "10mins",
+    "allocation_interval": "1secs",
+    "allocator": "HierarchicalDRF",
+    "authenticate_agents": "false",
+    "authenticate_frameworks": "false",
+    "authenticate_http_frameworks": "false",
+    "authenticate_http_readonly": "false",
+    "authenticate_http_readwrite": "false",
+    "authenticators": "crammd5",
+    "authorizers": "local",
+    "cluster": "mnaboka-ewam5mm",
+    "external_log_file": "/var/lib/dcos/mesos/log/mesos-master.log",
+    "fair_sharing_excluded_resource_names": "{ gpus }",
+    "filter_gpu_resources": "true",
+    "framework_sorter": "drf",
+    "help": "false",
+    "hostname_lookup": "false",
+    "http_authenticators": "basic",
+    "initialize_driver_logging": "true",
+    "ip_discovery_command": "/opt/mesosphere/bin/detect_ip",
+    "log_auto_initialize": "true",
+    "logbufsecs": "0",
+    "logging_level": "INFO",
+    "max_slave_ping_timeouts": "20",
+    "max_completed_frameworks": "50",
+    "max_completed_tasks_per_framework": "1000",
+    "max_unreachable_tasks_per_framework": "1000",
+    "modules_dir": "/opt/mesosphere/etc/mesos-master-modules",
+    "offer_timeout": "2mins",
+    "port": "5050",
+    "quiet": "false",
+    "quorum": "1",
+    "recovery_agent_removal_limit": "100%",
+    "registry": "replicated_log",
+    "registry_fetch_timeout": "1mins",
+    "registry_gc_interval": "15mins",
+    "registry_max_agent_age": "2weeks",
+    "registry_max_agent_count": "102400",
+    "registry_store_timeout": "1mins",
+    "registry_strict": "false",
+    "root_submissions": "true",
+    "user_sorter": "drf",
+    "version": "false",
+    "webui_dir": "/opt/mesosphere/packages/mesos--7d58751d9054e9ef0209751d3a849ecdecfe322e/share/mesos/webui",
+    "weights": "",
+    "work_dir": "/var/lib/dcos/mesos/master",
+    "zk": "zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos",
+    "zk_session_timeout": "10secs"
+  },
+  "slaves": [
+    {
+      "id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+      "hostname": "10.0.0.157",
+      "port": 5051,
+      "attributes": {},
+      "pid": "slave(1)@10.0.0.157:5051",
+      "registered_time": 1508783065.27533,
+      "resources": {
+        "disk": 138588,
+        "mem": 15026,
+        "gpus": 0,
+        "cpus": 4,
+        "ports": "[1025-2180, 2182-3887, 3889-5049, 5052-8079, 8082-8180, 8182-32000]"
+      },
+      "used_resources": {
+        "disk": 10,
+        "mem": 544,
+        "gpus": 0,
+        "cpus": 0.5
+      },
+      "offered_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "reserved_resources": {},
+      "unreserved_resources": {
+        "disk": 138588,
+        "mem": 15026,
+        "gpus": 0,
+        "cpus": 4,
+        "ports": "[1025-2180, 2182-3887, 3889-5049, 5052-8079, 8082-8180, 8182-32000]"
+      },
+      "active": true,
+      "version": "1.5.0",
+      "capabilities": [
+        "MULTI_ROLE",
+        "HIERARCHICAL_ROLE",
+        "RESERVATION_REFINEMENT"
+      ]
+    },
+    {
+      "id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S0",
+      "hostname": "10.0.6.133",
+      "port": 5051,
+      "attributes": {
+        "public_ip": "true"
+      },
+      "pid": "slave(1)@10.0.6.133:5051",
+      "registered_time": 1508783036.16545,
+      "resources": {
+        "disk": 138588,
+        "mem": 15026,
+        "gpus": 0,
+        "cpus": 4,
+        "ports": "[1-21, 23-5050, 5052-32000]"
+      },
+      "used_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "offered_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "reserved_resources": {
+        "slave_public": {
+          "disk": 138588,
+          "mem": 15026,
+          "gpus": 0,
+          "cpus": 4,
+          "ports": "[1-21, 23-5050, 5052-32000]"
+        }
+      },
+      "unreserved_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "active": true,
+      "version": "1.5.0",
+      "capabilities": [
+        "MULTI_ROLE",
+        "HIERARCHICAL_ROLE",
+        "RESERVATION_REFINEMENT"
+      ]
+    }
+  ],
+  "recovered_slaves": [],
+  "frameworks": [
+    {
+      "id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0001",
+      "name": "metronome",
+      "pid": "scheduler-96e1fbb5-bace-4bbd-9ef1-070a15ffcdc6@10.0.4.125:15201",
+      "used_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "offered_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "capabilities": [],
+      "hostname": "10.0.4.125",
+      "webui_url": "http://10.0.4.125:9000",
+      "active": true,
+      "connected": true,
+      "recovered": false,
+      "user": "root",
+      "failover_timeout": 604800000,
+      "checkpoint": true,
+      "registered_time": 1508783041.27185,
+      "unregistered_time": 0,
+      "resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "role": "*",
+      "tasks": [],
+      "unreachable_tasks": [],
+      "completed_tasks": [],
+      "offers": [],
+      "executors": []
+    },
+    {
+      "id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+      "name": "marathon",
+      "pid": "scheduler-b34a3afe-6acd-435c-a2f6-81ccc654daee@10.0.4.125:15101",
+      "used_resources": {
+        "disk": 10,
+        "mem": 544,
+        "gpus": 0,
+        "cpus": 0.5
+      },
+      "offered_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "capabilities": [
+        "TASK_KILLING_STATE",
+        "GPU_RESOURCES",
+        "PARTITION_AWARE"
+      ],
+      "hostname": "10.0.4.125",
+      "webui_url": "http://10.0.4.125:8080",
+      "active": true,
+      "connected": true,
+      "recovered": false,
+      "user": "root",
+      "failover_timeout": 604800,
+      "checkpoint": true,
+      "registered_time": 1508783026.20089,
+      "unregistered_time": 0,
+      "principal": "dcos_marathon",
+      "resources": {
+        "disk": 10,
+        "mem": 544,
+        "gpus": 0,
+        "cpus": 0.5
+      },
+      "role": "slave_public",
+      "tasks": [
+        {
+          "id": "parent-pod.instance-da6ef080-b81f-11e7-a9ac-52ad791ffaa8.container-2",
+          "name": "container-2",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "instance-parent-pod.da6ef080-b81f-11e7-a9ac-52ad791ffaa8",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783261.51415,
+              "container_status": {
+                "container_id": {
+                  "value": "0f79cb5f-f946-4a65-97ec-e84157216311",
+                  "parent": {
+                    "value": "1eb53d03-e8f2-4de7-8a51-be17b42a3a29"
+                  }
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "parent-pod",
+            "ports": {}
+          }
+        },
+        {
+          "id": "parent-pod.instance-da6ef080-b81f-11e7-a9ac-52ad791ffaa8.container-1",
+          "name": "container-1",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "instance-parent-pod.da6ef080-b81f-11e7-a9ac-52ad791ffaa8",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783261.5131,
+              "container_status": {
+                "container_id": {
+                  "value": "e7ed292a-8390-4da4-8c2a-c13b554e2c2a",
+                  "parent": {
+                    "value": "1eb53d03-e8f2-4de7-8a51-be17b42a3a29"
+                  }
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "parent-pod",
+            "ports": {}
+          }
+        },
+        {
+          "id": "single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8",
+          "name": "single-mesos-container",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783219.92384,
+              "container_status": {
+                "container_id": {
+                  "value": "1a69d257-48ca-4d3b-aead-332ad881fcc7"
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "single-mesos-container",
+            "ports": {}
+          },
+          "container": {
+            "type": "MESOS",
+            "mesos": {}
+          }
+        },
+        {
+          "id": "test123-123",
+          "name": "test123",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783219.92384,
+              "container_status": {
+                "container_id": {
+                  "value": "1a69d257-48ca-4d3b-aead-332ad881fcc7"
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "test123",
+            "ports": {}
+          },
+          "container": {
+            "type": "MESOS",
+            "mesos": {}
+          }
+        },
+        {
+          "id": "test123-345",
+          "name": "test123",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783219.92384,
+              "container_status": {
+                "container_id": {
+                  "value": "1a69d257-48ca-4d3b-aead-332ad881fcc7"
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "test123",
+            "ports": {}
+          },
+          "container": {
+            "type": "MESOS",
+            "mesos": {}
+          }
+        },
+        {
+          "id": "single-docker-container.ac0b2d2e-b81f-11e7-a9ac-52ad791ffaa8",
+          "name": "single-docker-container",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783209.34044,
+              "container_status": {
+                "container_id": {
+                  "value": "8498bfde-fc85-4421-b7bf-28bb9a13b154"
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "single-docker-container",
+            "ports": {}
+          },
+          "container": {
+            "type": "DOCKER",
+            "docker": {
+              "image": "golang",
+              "network": "HOST",
+              "privileged": false,
+              "parameters": [
+                {
+                  "key": "label",
+                  "value": "MESOS_TASK_ID=single-docker-container.ac0b2d2e-b81f-11e7-a9ac-52ad791ffaa8"
+                }
+              ],
+              "force_pull_image": false
+            }
+          }
+        }
+      ],
+      "unreachable_tasks": [],
+      "completed_tasks": [],
+      "offers": [],
+      "executors": [
+        {
+          "executor_id": "instance-parent-pod.da6ef080-b81f-11e7-a9ac-52ad791ffaa8",
+          "name": "",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "command": {
+            "argv": [],
+            "uris": []
+          },
+          "resources": {
+            "disk": 10,
+            "mem": 32,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "labels": [],
+          "type": "DEFAULT",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
+        }
+      ]
+    }
+  ],
+  "completed_frameworks": [],
+  "orphan_tasks": [],
+  "unregistered_frameworks": []
+}
