@@ -162,50 +162,62 @@ func TestClusterIDInvalidRole(t *testing.T) {
 }
 
 func TestMesosRuntimeShortCanonicalID(t *testing.T) {
-	expectedID := ""
+	expectedID := "single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8"
 	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
 	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
 	expectedExecutorID := ""
 	expectedContainerID := "1a69d257-48ca-4d3b-aead-332ad881fcc7"
 
 	if err := testCanonicalID("single-mesos-container", expectedID, expectedAgentID, expectedFrameworkID,
-		expectedExecutorID, expectedContainerID); err != nil {
+		expectedExecutorID, expectedContainerID, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMesosRuntimeLongCanonicalID(t *testing.T) {
-	expectedID := ""
+	expectedID := "single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8"
 	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
 	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
 	expectedExecutorID := ""
 	expectedContainerID := "1a69d257-48ca-4d3b-aead-332ad881fcc7"
 	if err := testCanonicalID("single-mesos-container.c1f5ae3f-b81f-11e7-a9ac-52ad791ffaa8", expectedID,
-		expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID); err != nil {
+		expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCanonicalTaskIDNotFound(t *testing.T) {
-	if err := testCanonicalID("foobar", "", "", "", "", ""); err != ErrTaskNotFound {
+	if err := testCanonicalID("foobar", "", "", "", "", "", false); err != ErrTaskNotFound {
 		t.Fatalf("error must be %s. Got %s", ErrTaskNotFound, err)
 	}
 }
 
 func TestPodCanonicalID(t *testing.T) {
-	expectedID := ""
+	expectedID := "parent-pod.instance-da6ef080-b81f-11e7-a9ac-52ad791ffaa8.container-1"
 	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
 	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
 	expectedExecutorID := "instance-parent-pod.da6ef080-b81f-11e7-a9ac-52ad791ffaa8"
 	expectedContainerID := "e7ed292a-8390-4da4-8c2a-c13b554e2c2a-1eb53d03-e8f2-4de7-8a51-be17b42a3a29"
 	if err := testCanonicalID("container-1", expectedID, expectedAgentID, expectedFrameworkID, expectedExecutorID,
-		expectedContainerID); err != nil {
+		expectedContainerID, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCompletedTaskCanonicalID(t *testing.T) {
+	expectedID := "single-docker-container.ac0b2d2e-b81f-11e7-a9ac-52ad791ffaa8"
+	expectedAgentID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1"
+	expectedFrameworkID := "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000"
+	expectedExecutorID := ""
+	expectedContainerID := "8498bfde-fc85-4421-b7bf-28bb9a13b154"
+	if err := testCanonicalID("single-docker-completed", expectedID, expectedAgentID, expectedFrameworkID, expectedExecutorID,
+		expectedContainerID, true); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCanonicalIDSameNameTasks(t *testing.T) {
-	err := testCanonicalID("test123", "", "", "", "", "")
+	err := testCanonicalID("test123", "", "", "", "", "", false)
 	if err == nil {
 		t.Fatal("expecting error. Got nil")
 	}
@@ -216,7 +228,8 @@ func TestCanonicalIDSameNameTasks(t *testing.T) {
 	}
 }
 
-func testCanonicalID(task, expectedID, expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID string) error {
+func testCanonicalID(task, expectedID, expectedAgentID, expectedFrameworkID, expectedExecutorID, expectedContainerID string,
+	completed bool) error {
 	state, err := ioutil.ReadFile("fixture/state.json")
 	if err != nil {
 		return err
@@ -232,11 +245,14 @@ func testCanonicalID(task, expectedID, expectedAgentID, expectedFrameworkID, exp
 		return err
 	}
 
-	cID, err := d.TaskCanonicalID(context.TODO(), task)
+	cID, err := d.TaskCanonicalID(context.TODO(), task, completed)
 	if err != nil {
 		return err
 	}
 
+	if cID.ID != expectedID {
+		return fmt.Errorf("expecting id %s. Got %s", expectedID, cID.ID)
+	}
 	if cID.AgentID != expectedAgentID {
 		return fmt.Errorf("expecting agent id %s. Got %s", expectedAgentID, cID.AgentID)
 	}
