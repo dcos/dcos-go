@@ -531,7 +531,64 @@
         }
       ],
       "unreachable_tasks": [],
-      "completed_tasks": [],
+      "completed_tasks": [
+        {
+          "id": "single-docker-container.ac0b2d2e-b81f-11e7-a9ac-52ad791ffaa8",
+          "name": "single-docker-completed",
+          "framework_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-0000",
+          "executor_id": "",
+          "slave_id": "db10f9b1-5b82-4187-aa47-4fbcefc7cdca-S1",
+          "state": "TASK_RUNNING",
+          "resources": {
+            "disk": 0,
+            "mem": 128,
+            "gpus": 0,
+            "cpus": 0.1
+          },
+          "role": "slave_public",
+          "statuses": [
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1508783209.34044,
+              "container_status": {
+                "container_id": {
+                  "value": "8498bfde-fc85-4421-b7bf-28bb9a13b154"
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.0.157"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "discovery": {
+            "visibility": "FRAMEWORK",
+            "name": "single-docker-container",
+            "ports": {}
+          },
+          "container": {
+            "type": "DOCKER",
+            "docker": {
+              "image": "golang",
+              "network": "HOST",
+              "privileged": false,
+              "parameters": [
+                {
+                  "key": "label",
+                  "value": "MESOS_TASK_ID=single-docker-container.ac0b2d2e-b81f-11e7-a9ac-52ad791ffaa8"
+                }
+              ],
+              "force_pull_image": false
+            }
+          }
+        }
+      ],
       "offers": [],
       "executors": [
         {
