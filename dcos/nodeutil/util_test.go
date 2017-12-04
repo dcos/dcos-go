@@ -5,16 +5,27 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 
 	"context"
-	"github.com/dcos/dcos-go/dcos"
 	"io/ioutil"
 	"strings"
+
+	"github.com/dcos/dcos-go/dcos"
 )
 
+func getFixture(name string) string {
+	switch runtime.GOOS {
+	case "windows":
+		return "fixture/" + name + ".ps1"
+	default:
+		return "fixture/" + name + ".sh"
+	}
+}
+
 func TestDetectIP(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionDetectIP("fixture/detect_ip_good.sh"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionDetectIP(getFixture("detect_ip_good")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +42,7 @@ func TestDetectIP(t *testing.T) {
 }
 
 func TestDetectIPFail(t *testing.T) {
-	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionDetectIP("fixture/detect_ip_bad.sh"))
+	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionDetectIP(getFixture("detect_ip_bad")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +70,7 @@ func TestMesosID(t *testing.T) {
 	defer ts.Close()
 
 	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionMesosStateURL(ts.URL),
-		OptionDetectIP("fixture/detect_ip_good.sh"))
+		OptionDetectIP(getFixture("detect_ip_good")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +86,7 @@ func TestMesosID(t *testing.T) {
 
 	// Test agent response
 	d, err = NewNodeInfo(&http.Client{}, dcos.RoleAgent, OptionMesosStateURL(ts.URL),
-		OptionDetectIP("fixture/detect_ip_good.sh"))
+		OptionDetectIP(getFixture("detect_ip_good")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +120,7 @@ func TestMesosIDFail(t *testing.T) {
 
 func TestIsLeader(t *testing.T) {
 	d, err := NewNodeInfo(&http.Client{}, dcos.RoleMaster, OptionLeaderDNSRecord("dcos.io"),
-		OptionDetectIP("fixture/detect_ip_good.sh"))
+		OptionDetectIP(getFixture("detect_ip_good")))
 	if err != nil {
 		t.Fatal(err)
 	}
