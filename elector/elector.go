@@ -241,6 +241,9 @@ func sortedChildrenSequences(children []string) (sorted []int, lookup map[int]st
 		sorted[i] = seq
 		lookup[seq] = child
 	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i] < sorted[j]
+	})
 	return sorted, lookup, nil
 }
 
@@ -252,7 +255,7 @@ func determineLeader(node string, children []string) (isLeader bool, leaderNode 
 		if len(children) == 0 {
 			return errors.New("no child nodes")
 		}
-		childrenSeq, lookup, err := sortedChildrenSequences(children)
+		sequences, lookup, err := sortedChildrenSequences(children)
 		if err != nil {
 			return err
 		}
@@ -260,10 +263,7 @@ func determineLeader(node string, children []string) (isLeader bool, leaderNode 
 		if err != nil {
 			return errors.Wrap(err, "invalid owner node")
 		}
-		sort.Slice(childrenSeq, func(i, j int) bool {
-			return childrenSeq[i] < childrenSeq[j]
-		})
-		leaderSeq := childrenSeq[0]
+		leaderSeq := sequences[0]
 		isLeader = mySeq == leaderSeq
 		leaderNode = lookup[leaderSeq]
 		return nil
