@@ -83,14 +83,15 @@ func durationOrDefault(duration time.Duration, defaultDuration time.Duration) ti
 // waitForSession waits for a session to be established. if it times out
 // an error will be returned.
 func waitForSession(zkEvents <-chan zk.Event, timeout time.Duration) error {
-	deadline := time.After(timeout)
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
 	for {
 		select {
 		case e := <-zkEvents:
 			if e.State == zk.StateHasSession {
 				return nil
 			}
-		case <-deadline:
+		case <-deadline.C:
 			return errors.New("timed out")
 		}
 	}
