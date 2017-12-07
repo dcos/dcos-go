@@ -158,8 +158,7 @@ func (e *Elector) start(zkEvents <-chan zk.Event) {
 			if err != nil {
 				return errors.Wrap(err, "could not get ident from node")
 			}
-			e.setLeaderIdent(leaderIdent)
-			e.sendLeader(isLeader, firstLeaderUpdate)
+			e.updateLeaderData(leaderIdent, isLeader, firstLeaderUpdate)
 			firstLeaderUpdate = false
 			return nil
 		}
@@ -196,37 +195,26 @@ func (e *Elector) start(zkEvents <-chan zk.Event) {
 	e.sendErr(err)
 }
 
+// updateLeaderData updates the leadership information on the elector, and also
+// sends a Leader event if the elector leadership transitioned.
+func (e *Elector) updateLeaderData(leaderIdent string, leader bool, forceSend bool) {
+	e.mut.Lock()
+	prevLeader := e.isLeader // used later to determine if update necessary
+	e.leaderIdent = leaderIdent
+	e.isLeader = leader
+	e.mut.Unlock()
+	if prevLeader == leader && !forceSend {
+		return
+	}
+	e.sendEvent(Event{Leader: leader})
+}
+
 // getIdentFromNode fetches the znode data from the specified node and returns
 // it as a string
 func (e *Elector) getIdentFromNode(node string) (ident string, err error) {
 	nodePath := path.Join(e.basePath, node)
 	b, _, err := e.conn.Get(nodePath)
 	return string(b), err
-}
-
-// sendLeader sends a leader event on the events chan.  if the previous
-// leader state did not change, it will not send the event unless the
-// force parameter is true.
-func (e *Elector) sendLeader(leader bool, force bool) {
-	e.mut.Lock()
-	isLeader := e.isLeader
-	e.mut.Unlock()
-	if isLeader == leader && !force {
-		return
-	}
-	e.mut.Lock()
-	e.isLeader = leader
-	e.mut.Unlock()
-	e.sendEvent(Event{Leader: leader})
-}
-
-// setLeaderIdent safely sets the current leader ident on the elector. This
-// allows it to be queried for the current leader ident without having to
-// consult zookeeper every time.
-func (e *Elector) setLeaderIdent(ident string) {
-	e.mut.Lock()
-	defer e.mut.Unlock()
-	e.leaderIdent = ident
 }
 
 // sendErr sends an error event on the events chan.
