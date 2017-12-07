@@ -17,8 +17,17 @@ import (
 // choose to use this, but the Start() method will return a concrete type,
 // keeping in line with 'return concrete types, accept interfaces'.
 type IElector interface {
+	// LeaderIdent returns the current leader of the cluster, or "" if
+	// the current leader is not known.
 	LeaderIdent() string
+
+	// Events returns a channel from which the client should consume events
+	// from the elector.  The channel will be closed after an error event
+	// is sent, as the elector is no longer usable from that point on.
 	Events() <-chan Event
+
+	// Close tidies up any applicable connection details to ZK. Clients
+	// should call then when the elector is no longer needed
 	Close() error
 }
 
@@ -129,6 +138,7 @@ func (e *Elector) initialize() error {
 }
 
 func (e *Elector) start(zkEvents <-chan zk.Event) {
+	defer close(e.events)
 	err := func() error {
 		lockPath, err := e.conn.CreateProtectedEphemeralSequential(
 			e.basePath+"/lock-",
@@ -207,7 +217,7 @@ func (e *Elector) sendLeader(leader bool, force bool) {
 	e.mut.Lock()
 	e.isLeader = leader
 	e.mut.Unlock()
-	e.events <- Event{Leader: leader}
+	e.sendEvent(Event{Leader: leader})
 }
 
 // setLeaderIdent safely sets the current leader ident on the elector. This
@@ -221,7 +231,12 @@ func (e *Elector) setLeaderIdent(ident string) {
 
 // sendErr sends an error event on the events chan.
 func (e *Elector) sendErr(err error) {
-	e.events <- Event{Err: err}
+	e.sendEvent(Event{Err: err})
+}
+
+// sendEvent sends the specified event on the events channel
+func (e *Elector) sendEvent(event Event) {
+	e.events <- event
 }
 
 // sorted children sequences converts the children to sequence parts, and
