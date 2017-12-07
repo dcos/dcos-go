@@ -167,7 +167,7 @@ func (e *Elector) start(zkEvents <-chan zk.Event) {
 		if err != nil {
 			return errors.Wrap(err, "could not get children")
 		}
-		if err := updateFunc(children); err != nil {
+		if err = updateFunc(children); err != nil {
 			return err
 		}
 		for {
@@ -185,7 +185,7 @@ func (e *Elector) start(zkEvents <-chan zk.Event) {
 				if err != nil {
 					return errors.Wrap(err, "could not get children")
 				}
-				if err := updateFunc(children); err != nil {
+				if err = updateFunc(children); err != nil {
 					return err
 				}
 			}
