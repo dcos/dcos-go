@@ -36,15 +36,16 @@ var _ IElector = &Elector{}
 
 // Elector handles leadership elections
 type Elector struct {
-	mut         sync.Mutex   //
-	acl         []zk.ACL     //
-	conn        *zk.Conn     //
-	events      chan Event   //
-	ident       string       // the ident of the elector
-	leaderIdent string       // the current leader's ident
-	basePath    string       // where the elector nodes will be created
-	isLeader    bool         // whether or not the current elector is leader
-	closer      func() error // the connector shutdown func
+	acl      []zk.ACL
+	conn     *zk.Conn
+	events   chan Event
+	ident    string       // the ident of the elector
+	basePath string       // where the elector nodes will be created
+	closer   func() error // the connector shutdown func
+
+	mut         sync.Mutex // mut guards the following mutable state:
+	leaderIdent string     // the current leader's ident
+	isLeader    bool       // whether or not the current elector is leader
 }
 
 var (
