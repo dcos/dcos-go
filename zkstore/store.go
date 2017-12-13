@@ -183,6 +183,34 @@ func (s *Store) setFully(item Item) (stat *zk.Stat, err error) {
 	}()
 	return stat, err
 }
+
+// Get fetches the data for a particuar item. If a particluar version is
+// desired, it must be set on the ident.
+func (s *Store) Get(ident Ident) (item Item, found bool, err error) {
+	err = func() error {
+		if err := ident.Validate(); err != nil {
+			return err
+		}
+		identPath, err := s.identPath(ident)
+		if err != nil {
+			return err
+		}
+		data, stat, err := s.conn.Get(identPath)
+		switch {
+		case err == zk.ErrNoNode:
+			// leave found set to false and return
+			return nil
+		case err != nil:
+			return err
+		}
+		item.Ident = ident
+		item.Data = data
+		item.Ident.SetZKVersion(stat.Version)
+		found = true
+		return nil
+	}()
+	return item, found, err
+}
 // mustExist checks whether or not the path exists, and returns an error
 // if it could not be verified to exist.
 func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
