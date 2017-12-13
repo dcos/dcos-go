@@ -211,6 +211,37 @@ func (s *Store) Get(ident Ident) (item Item, found bool, err error) {
 	}()
 	return item, found, err
 }
+
+// Versions fetches all of the versions for a particular item. The versions
+// returned for the item will be the sorted names of the versions.
+//
+// If the item does not exist, found will be false, otherwise true.
+func (s *Store) Versions(location Location) (versions []string, found bool, err error) {
+	err = func() error {
+		if err := location.Validate(); err != nil {
+			return err
+		}
+		// create an ident in order to get the full path for the item node
+		ident := Ident{Location: location}
+		identPath, err := s.identPath(ident)
+		if err != nil {
+			return err
+		}
+		versions, _, err = s.conn.Children(identPath)
+		switch {
+		case err == zk.ErrNoNode:
+			// leave found set to false and return
+			return nil
+		case err != nil:
+			return err
+		}
+		// always sort versions for consistency
+		sort.Strings(versions)
+		found = true
+		return nil
+	}()
+	return versions, found, err
+}
 // mustExist checks whether or not the path exists, and returns an error
 // if it could not be verified to exist.
 func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
