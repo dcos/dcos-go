@@ -242,6 +242,77 @@ func (s *Store) Versions(location Location) (versions []string, found bool, err 
 	}()
 	return versions, found, err
 }
+
+// Delete deletes the identified item.  If successful, true will be returned.
+// If the item does not exist, false will be returned.
+func (s *Store) Delete(ident Ident) (found bool, err error) {
+	if err = ident.Validate(); err != nil {
+		return false, err
+	}
+	if ident.Version != "" {
+		return s.deleteVersion(ident)
+	}
+	return s.deleteItem(ident)
+}
+
+// deleteItem deletes the item and all versions within it
+func (s *Store) deleteItem(ident Ident) (found bool, err error) {
+	err = func() error {
+		var versions []string
+		versions, found, err = s.Versions(ident.Location)
+		switch {
+		case err != nil:
+			return err
+		case !found:
+			// the item could not be found. leave found=false and return
+			return nil
+		}
+		// delete each version of the specified item
+		for _, version := range versions {
+			versionIdent := ident
+			versionIdent.Version = version
+			versionIdent.ZKVersion = nil // force delete it no matter the zk version
+			if _, err = s.deleteVersion(versionIdent); err != nil {
+				return err
+			}
+		}
+		// and then delete the actual parent node
+		identPath, err := s.identPath(ident)
+		if err != nil {
+			return err
+		}
+		err = s.conn.Delete(identPath, ident.actualZKVersion())
+		switch err {
+		case zk.ErrNoNode:
+			return nil
+		case zk.ErrBadVersion:
+			return ErrVersionConflict
+		}
+		return err
+	}()
+	return found, err
+}
+
+// deleteVersion deletes only an item version
+func (s *Store) deleteVersion(ident Ident) (found bool, err error) {
+	err = func() error {
+		identPath, err := s.identPath(ident)
+		if err != nil {
+			return err
+		}
+		err = s.conn.Delete(identPath, ident.actualZKVersion())
+		switch err {
+		case zk.ErrNoNode:
+			// perhaps someone already deleted it? leave found==false
+			return nil
+		case zk.ErrBadVersion:
+			return ErrVersionConflict
+		}
+		found = true
+		return err
+	}()
+	return found, err
+}
 // mustExist checks whether or not the path exists, and returns an error
 // if it could not be verified to exist.
 func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
