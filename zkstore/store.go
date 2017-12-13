@@ -133,7 +133,7 @@ func (s *Store) Put(item Item) (Ident, error) {
 		case stat == nil:
 			return errors.Errorf("could not stat %v", identPath)
 		}
-		item.Ident.ZKVersion = &stat.Version
+		item.Ident.SetZKVersion(stat.Version)
 		return nil
 	}()
 	return item.Ident, err
