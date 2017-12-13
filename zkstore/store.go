@@ -101,6 +101,88 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 	}
 	return store, nil
 }
+
+// Put stores the specified item.  If successful, an Ident will be returned
+// that reflects the updated metadata for that item (specifically, the
+// ZKVersion)
+//
+// If a client attempts to set an Item with a Version, and the current
+// item (with no Version) does not exist yet, the current item will be
+// created as well, with the same data as the specified Item.
+func (s *Store) Put(item Item) (Ident, error) {
+	err := func() error {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+		identPath, err := s.identPath(item.Ident)
+		if err != nil {
+			return err
+		}
+		// shortcut: try to set it if it already exists
+		stat, err := s.conn.Set(identPath, item.Data, item.Ident.actualZKVersion())
+		switch {
+		case err == zk.ErrNoNode:
+			// it didn't exist, so take the more expensive path
+			if stat, err = s.setFully(item); err != nil {
+				return err
+			}
+		case err == zk.ErrBadVersion:
+			return ErrVersionConflict
+		case err != nil:
+			return err
+		case stat == nil:
+			return errors.Errorf("could not stat %v", identPath)
+		}
+		item.Ident.ZKVersion = &stat.Version
+		return nil
+	}()
+	return item.Ident, err
+}
+
+// setFully sets data for a path, creating any parents nodes as necessary.
+// The stat returned will be the stat of the final created node.
+func (s *Store) setFully(item Item) (stat *zk.Stat, err error) {
+	err = func() error {
+		identPath, err := s.identPath(item.Ident)
+		if err != nil {
+			return err
+		}
+		current := "/"
+		segments := strings.Split(identPath, "/")
+		for i, segment := range segments {
+			isLast := i == len(segments)-1
+			current = path.Join(current, segment)
+			exists, _, err := s.conn.Exists(current)
+			switch {
+			case err != nil:
+				return errors.Wrapf(err, "could not check %v", current)
+			case exists:
+				continue
+			case isLast && item.Ident.actualZKVersion() >= 0:
+				// specifying a new version on a non-existent node
+				// is not supported
+				return ErrVersionConflict
+			}
+			// this node does not exist. try to create it.
+			var nodeData []byte
+
+			// if the item has a version, and its parent node does
+			// not yet exist, we set the content on the parent
+			// node as well as the version node.
+			isParentOfVersion := item.Ident.Version != "" && i == len(segments)-2
+			if isLast || isParentOfVersion {
+				nodeData = item.Data
+			}
+			_, err = s.conn.Create(current, nodeData, 0, s.acls)
+			if err != nil && err != zk.ErrNodeExists {
+				return err
+			}
+		}
+		stat, err = s.mustExist(identPath)
+		return errors.Wrapf(err, "%v was not created", identPath)
+	}()
+	return stat, err
+}
 // mustExist checks whether or not the path exists, and returns an error
 // if it could not be verified to exist.
 func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
