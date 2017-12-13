@@ -359,6 +359,11 @@ func (s *Store) List(category string) (locations []Location, found bool, err err
 	return locations, found, err
 }
 
+// Close shuts down the Store
+func (s *Store) Close() error {
+	return s.closeFunc()
+}
+
 // mustExist checks whether or not the path exists, and returns an error
 // if it could not be verified to exist.
 func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
