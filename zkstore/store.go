@@ -313,6 +313,52 @@ func (s *Store) deleteVersion(ident Ident) (found bool, err error) {
 	}()
 	return found, err
 }
+
+// List lists all of the known, latest version Locations that exist under
+// the specified category.  The locations will be sorted by Location Name.
+// If the category could not be found, found will be set to false.
+func (s *Store) List(category string) (locations []Location, found bool, err error) {
+	err = func() error {
+		if err = validateCategory(category); err != nil {
+			return errors.Wrap(err, "invalid category")
+		}
+		bucketsPath, err := s.bucketsPath(category)
+		if err != nil {
+			return err
+		}
+		buckets, _, err := s.conn.Children(bucketsPath)
+		switch {
+		case err == zk.ErrNoNode:
+			return nil
+		case err != nil:
+			return err
+		}
+		found = true
+		for _, bucket := range buckets {
+			children, _, err := s.conn.Children(path.Join(bucketsPath, bucket))
+			switch {
+			case err == zk.ErrNoNode:
+				// someone else deleted it? keep going.
+				continue
+			case err != nil:
+				return err
+			}
+			for _, child := range children {
+				pieces := strings.Split(child, "/")
+				locations = append(locations, Location{
+					Category: category,
+					Name:     pieces[len(pieces)-1],
+				})
+			}
+		}
+		return nil
+	}()
+	sort.Slice(locations, func(i, j int) bool {
+		return locations[i].Name < locations[j].Name
+	})
+	return locations, found, err
+}
+
 // mustExist checks whether or not the path exists, and returns an error
 // if it could not be verified to exist.
 func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
