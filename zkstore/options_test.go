@@ -3,7 +3,6 @@ package zkstore
 import (
 	"crypto/md5"
 	"crypto/sha1"
-	"hash/fnv"
 	"testing"
 
 	"github.com/samuel/go-zookeeper/zk"
@@ -38,6 +37,5 @@ func TestOptHashProviderFunc(t *testing.T) {
 	store := &Store{}
 	require.EqualError(OptHashProviderFunc(nil)(store), "hash provider func required")
 	require.NoError(OptHashProviderFunc(md5.New)(store))
-	require.NoError(OptHashProviderFunc(fnv.New128)(store))
 	require.NoError(OptHashProviderFunc(sha1.New)(store))
 }
