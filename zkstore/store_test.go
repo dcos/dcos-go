@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: perhaps use a _buckets folder for the buckets. that would allow
-// any sort of category to be used as long as we don't allow _ as the first
-// character for a named item?
-
 func TestExpectedBehavior(t *testing.T) {
 	store, _, teardown := newStoreTest(t, OptBasePath("/storage"))
 	defer teardown()
