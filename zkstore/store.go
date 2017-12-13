@@ -101,3 +101,83 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 	}
 	return store, nil
 }
+// mustExist checks whether or not the path exists, and returns an error
+// if it could not be verified to exist.
+func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
+	err = func() error {
+		var exists bool
+		exists, stat, err = s.conn.Exists(path)
+		switch {
+		case err != nil:
+			return err
+		case !exists:
+			return errors.Errorf("%v did not exist ", path)
+		case stat == nil:
+			return errors.Errorf("got nil stat for path %v", path)
+		}
+		return nil
+	}()
+	return stat, err
+}
+
+// identPath returns the full path of the item pointed to by the Ident
+func (s *Store) identPath(ident Ident) (string, error) {
+	bucket, err := s.bucketFor(ident.Location.Name)
+	if err != nil {
+		return "", err
+	}
+	bucketsPath, err := s.bucketsPath(ident.Location.Category)
+	if err != nil {
+		return "", err
+	}
+	return path.Join(
+		bucketsPath,
+		strconv.Itoa(bucket),
+		ident.Location.Name,
+		ident.Version,
+	), nil
+}
+
+// bucketsPath returns the full path of the buckets znode for a given category.
+// an error will be returned if the category ends with the name of the buckets
+// znode name.
+func (s *Store) bucketsPath(category string) (string, error) {
+	segments := strings.Split(path.Clean(category), "/")
+	if segments[len(segments)-1] == s.bucketsZnodeName {
+		return "", errors.New("category may not end with the buckets znode name")
+	}
+	return path.Join(
+		"/",
+		s.basePath,
+		category,
+		s.bucketsZnodeName,
+	), nil
+}
+
+// bucketFor returns the bucket number for a particular name
+func (s *Store) bucketFor(name string) (int, error) {
+	if s.bucketFunc != nil {
+		return s.bucketFunc(name)
+	}
+	hasher := s.hashProviderFunc()
+	_, err := hasher.Write([]byte(name))
+	if err != nil {
+		return 0, err
+	}
+	hash := hasher.Sum(nil)
+	return s.hashBytesToBucket(hash)
+}
+
+// hashBytesToBucket produces a positive int from a hashed byte slice
+func (s *Store) hashBytesToBucket(hash []byte) (int, error) {
+	var res int64
+	reader := bytes.NewReader(hash[len(hash)-8:])
+	if err := binary.Read(reader, binary.LittleEndian, &res); err != nil {
+		return 0, err
+	}
+	mod := int(res) % s.hashBuckets
+	if mod < 0 {
+		mod = mod * -1
+	}
+	return mod, nil
+}
