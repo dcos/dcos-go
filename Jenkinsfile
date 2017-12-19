@@ -23,8 +23,8 @@ stage('start tests') {
 			dir('dcos-go') {
 			  checkout scm
 
-			  sh 'docker build -t dcos/dcos-go .'
-			  sh '''
+			  bat 'docker build -t dcos/dcos-go .'
+			  bat '''
 				 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
 				   -v $(which docker):/usr/bin/docker -v "$PWD":/go/src/github.com/dcos/dcos-go \
 				   dcos/dcos-go make test'''
