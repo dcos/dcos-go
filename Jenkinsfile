@@ -23,6 +23,7 @@ stage('start tests') {
 			dir('dcos-go') {
 			  checkout scm
 
+			  bat 'go version'
 			  bat 'docker build -t dcos/dcos-go .'
 			  bat '''
 				 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
