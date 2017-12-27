@@ -390,6 +390,23 @@ func (d *dcosInfo) state(ctx context.Context) (state State, err error) {
 	return state, err
 }
 
+func findTask(name string, completed bool, frameworks []Framework) (foundTasks []Task) {
+	for _, framework := range frameworks {
+		currentTasks := framework.Tasks
+		if completed {
+			currentTasks = framework.CompletedTasks
+		}
+
+		for _, t := range currentTasks {
+			if t.Name != name && !strings.Contains(t.ID, name) {
+				continue
+			}
+			foundTasks = append(foundTasks, t)
+		}
+	}
+	return
+}
+
 // TaskCanonicalID return a CanonicalTaskID for a given task.
 func (d *dcosInfo) TaskCanonicalID(ctx context.Context, task string, completed bool) (*CanonicalTaskID, error) {
 	state, err := d.state(ctx)
@@ -397,20 +414,14 @@ func (d *dcosInfo) TaskCanonicalID(ctx context.Context, task string, completed b
 		return nil, err
 	}
 
-	var foundTasks []Task
-	for _, framework := range state.Frameworks {
-		currentTasks := framework.Tasks
-		if completed {
-			currentTasks = framework.CompletedTasks
-		}
+	frameworksTasks := findTask(task, completed, state.Frameworks)
 
-		for _, t := range currentTasks {
-			if t.Name != task && !strings.Contains(t.ID, task) {
-				continue
-			}
-			foundTasks = append(foundTasks, t)
-		}
+	var completedFrameworksTasks []Task
+	if completed {
+		completedFrameworksTasks = findTask(task, completed, state.CompletedFrameworks)
 	}
+
+	foundTasks := append(frameworksTasks, completedFrameworksTasks...)
 
 	if len(foundTasks) == 0 {
 		return nil, ErrTaskNotFound

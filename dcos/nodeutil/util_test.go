@@ -301,3 +301,14 @@ func TestContextWithHeaders(t *testing.T) {
 		t.Fatalf("Expect header `TEST:123`. Got %+v", headerFromContext)
 	}
 }
+
+func TestFindCompletedFramework(t *testing.T) {
+	name := "node-0-server__29de48bb-dfd7-4ccc-a5ba-7918b2eb880c"
+	err := testCanonicalID(name, name, "93397246-d2c3-4e56-9848-4573c8e778bb-S9",
+		"93397246-d2c3-4e56-9848-4573c8e778bb-0002", "node__9a542345-b67d-4ece-9495-8ef52083d175",
+		"ca7771e1-a932-472c-9220-e908d0f17655-f9c3e6b1-06ec-451d-a3f4-6a173e22360b-ca7771e1-a932-472c-9220-e908d0f17655-f9c3e6b1-06ec-451d-a3f4-6a173e22360b-ca7771e1-a932-472c-9220-e908d0f17655-f9c3e6b1-06ec-451d-a3f4-6a173e22360b",
+		true)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

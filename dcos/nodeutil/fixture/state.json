@@ -613,7 +613,218 @@
       ]
     }
   ],
-  "completed_frameworks": [],
+  "completed_frameworks": [
+    {
+      "id": "93397246-d2c3-4e56-9848-4573c8e778bb-0002",
+      "name": "cassandra",
+      "pid": "scheduler-fca610f3-5400-4d51-9bd0-6826837a2961@10.0.1.133:41531",
+      "used_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "offered_resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "capabilities": [
+        "RESERVATION_REFINEMENT"
+      ],
+      "hostname": "ip-10-0-1-133.us-west-2.compute.internal",
+      "webui_url": "",
+      "active": false,
+      "connected": true,
+      "recovered": false,
+      "user": "nobody",
+      "failover_timeout": 1209600,
+      "checkpoint": true,
+      "registered_time": 1514319575.15679,
+      "unregistered_time": 1514320028.5209,
+      "principal": "cassandra-principal",
+      "resources": {
+        "disk": 0,
+        "mem": 0,
+        "gpus": 0,
+        "cpus": 0
+      },
+      "reregistered_time": 1514320017.1367,
+      "role": "cassandra-role",
+      "tasks": [],
+      "unreachable_tasks": [],
+      "completed_tasks": [
+        {
+          "id": "node-0-server__29de48bb-dfd7-4ccc-a5ba-7918b2eb880c",
+          "name": "node-0-server",
+          "framework_id": "93397246-d2c3-4e56-9848-4573c8e778bb-0002",
+          "executor_id": "node__9a542345-b67d-4ece-9495-8ef52083d175",
+          "slave_id": "93397246-d2c3-4e56-9848-4573c8e778bb-S9",
+          "state": "TASK_KILLED",
+          "resources": {
+            "disk": 0,
+            "mem": 4096,
+            "gpus": 0,
+            "cpus": 0.5,
+            "ports": "[7000-7001, 7199-7199, 9042-9042, 9160-9160]"
+          },
+          "role": "cassandra-role",
+          "statuses": [
+            {
+              "state": "TASK_STARTING",
+              "timestamp": 1514319585.87887,
+              "container_status": {
+                "container_id": {
+                  "value": "ca7771e1-a932-472c-9220-e908d0f17655",
+                  "parent": {
+                    "value": "f9c3e6b1-06ec-451d-a3f4-6a173e22360b"
+                  }
+                }
+              }
+            },
+            {
+              "state": "TASK_RUNNING",
+              "timestamp": 1514319660.14479,
+              "container_status": {
+                "container_id": {
+                  "value": "ca7771e1-a932-472c-9220-e908d0f17655",
+                  "parent": {
+                    "value": "f9c3e6b1-06ec-451d-a3f4-6a173e22360b"
+                  }
+                },
+                "network_infos": [
+                  {
+                    "ip_addresses": [
+                      {
+                        "protocol": "IPv4",
+                        "ip_address": "10.0.1.133"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "state": "TASK_KILLED",
+              "timestamp": 1514320024.74511,
+              "container_status": {
+                "container_id": {
+                  "value": "ca7771e1-a932-472c-9220-e908d0f17655",
+                  "parent": {
+                    "value": "f9c3e6b1-06ec-451d-a3f4-6a173e22360b"
+                  }
+                }
+              }
+            }
+          ],
+          "user": "nobody",
+          "labels": [
+            {
+              "key": "goal_state",
+              "value": "RUNNING"
+            },
+            {
+              "key": "index",
+              "value": "0"
+            },
+            {
+              "key": "offer_attributes",
+              "value": ""
+            },
+            {
+              "key": "offer_hostname",
+              "value": "10.0.1.133"
+            },
+            {
+              "key": "target_configuration",
+              "value": "5c96087b-40ce-4603-809d-9f8a99b5354e"
+            },
+            {
+              "key": "task_type",
+              "value": "node"
+            }
+          ],
+          "discovery": {
+            "visibility": "CLUSTER",
+            "name": "node-0-server",
+            "ports": {
+              "ports": [
+                {
+                  "number": 7199,
+                  "name": "jmx",
+                  "protocol": "tcp",
+                  "visibility": "CLUSTER"
+                },
+                {
+                  "number": 7000,
+                  "name": "storage",
+                  "protocol": "tcp",
+                  "visibility": "CLUSTER"
+                },
+                {
+                  "number": 7001,
+                  "name": "ssl",
+                  "protocol": "tcp",
+                  "visibility": "CLUSTER"
+                },
+                {
+                  "number": 9042,
+                  "name": "node",
+                  "protocol": "tcp",
+                  "visibility": "EXTERNAL",
+                  "labels": {
+                    "labels": [
+                      {
+                        "key": "VIP_9e315273-f771-425d-8894-b83be4995e78",
+                        "value": "node:9042"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "number": 9160,
+                  "name": "rpc",
+                  "protocol": "tcp",
+                  "visibility": "CLUSTER"
+                }
+              ]
+            }
+          },
+          "container": {
+            "type": "MESOS",
+            "volumes": [
+              {
+                "mode": "RW",
+                "container_path": "container-path",
+                "source": {
+                  "type": "SANDBOX_PATH",
+                  "sandbox_path": {
+                    "type": "PARENT",
+                    "path": "container-path"
+                  }
+                }
+              }
+            ],
+            "mesos": {
+              "image": {
+                "type": "DOCKER",
+                "docker": {
+                  "name": "mesosphere/cassandra:1.0.26-3.0.10"
+                },
+                "cached": true
+              }
+            },
+            "linux_info": {
+              "share_pid_namespace": false
+            }
+          }
+        }
+      ],
+      "offers": [],
+      "executors": []
+    }
+  ],
   "orphan_tasks": [],
   "unregistered_frameworks": []
 }
