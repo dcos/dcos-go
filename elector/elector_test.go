@@ -1,6 +1,7 @@
 package elector
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -14,6 +15,9 @@ var basePath = "/leader/election/lock"
 var opts = ConnectionOpts{}
 
 func TestZookeeperPartition(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Does not work on Windows yet")
+	}
 	require := require.New(t)
 	zkCtl, err := testutils.StartZookeeper()
 	require.NoError(err)
@@ -37,6 +41,9 @@ func TestZookeeperPartition(t *testing.T) {
 }
 
 func TestExpectedBehavior(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Does not work on Windows yet")
+	}
 	require := require.New(t)
 	zkCtl, err := testutils.StartZookeeper()
 	require.NoError(err)
