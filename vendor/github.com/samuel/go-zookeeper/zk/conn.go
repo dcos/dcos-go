@@ -102,7 +102,8 @@ type Conn struct {
 	setWatchLimit    int
 	setWatchCallback func([]*setWatchesRequest)
 
-	logger Logger
+	logger  Logger
+	logInfo bool // true if information messages are logged; false if only errors are logged
 
 	buf []byte
 }
@@ -200,6 +201,7 @@ func Connect(servers []string, sessionTimeout time.Duration, options ...connOpti
 		watchers:       make(map[watchPathType][]chan Event),
 		passwd:         emptyPassword,
 		logger:         DefaultLogger,
+		logInfo:        true, // default is true for backwards compatability
 		buf:            make([]byte, bufferSize),
 	}
 
@@ -234,6 +236,21 @@ func WithDialer(dialer Dialer) connOption {
 func WithHostProvider(hostProvider HostProvider) connOption {
 	return func(c *Conn) {
 		c.hostProvider = hostProvider
+	}
+}
+
+// WithLogger returns a connection option specifying a non-default Logger
+func WithLogger(logger Logger) connOption {
+	return func(c *Conn) {
+		c.logger = logger
+	}
+}
+
+// WithLogInfo returns a connection option specifying whether or not information messages
+// shoud be logged.
+func WithLogInfo(logInfo bool) connOption {
+	return func(c *Conn) {
+		c.logInfo = logInfo
 	}
 }
 
@@ -277,6 +294,16 @@ func WithMaxBufferSize(maxBufferSize int) connOption {
 	return func(c *Conn) {
 		c.maxBufferSize = maxBufferSize
 	}
+}
+
+// WithMaxConnBufferSize sets maximum buffer size used to send and encode
+// packets to Zookeeper server. The standard Zookeepeer client for java defaults
+// to a limit of 1mb. This option should be used for non-standard server setup
+// where znode is bigger than default 1mb.
+func WithMaxConnBufferSize(maxBufferSize int) connOption {
+       return func(c *Conn) {
+               c.buf = make([]byte, maxBufferSize)
+       }
 }
 
 func (c *Conn) Close() {
@@ -351,7 +378,9 @@ func (c *Conn) connect() error {
 		if err == nil {
 			c.conn = zkConn
 			c.setState(StateConnected)
-			c.logger.Printf("Connected to %s", c.Server())
+			if c.logInfo {
+				c.logger.Printf("Connected to %s", c.Server())
+			}
 			return nil
 		}
 
@@ -365,8 +394,10 @@ func (c *Conn) resendZkAuth(reauthReadyChan chan struct{}) {
 
 	defer close(reauthReadyChan)
 
-	c.logger.Printf("Re-submitting `%d` credentials after reconnect",
-		len(c.creds))
+	if c.logInfo {
+		c.logger.Printf("Re-submitting `%d` credentials after reconnect",
+			len(c.creds))
+	}
 
 	for _, cred := range c.creds {
 		resChan, err := c.sendRequest(
@@ -434,7 +465,9 @@ func (c *Conn) loop() {
 			c.logger.Printf("Authentication failed: %s", err)
 			c.conn.Close()
 		case err == nil:
-			c.logger.Printf("Authenticated: id=%d, timeout=%d", c.SessionID(), c.sessionTimeoutMs)
+			if c.logInfo {
+				c.logger.Printf("Authenticated: id=%d, timeout=%d", c.SessionID(), c.sessionTimeoutMs)
+			}
 			c.hostProvider.Connected()        // mark success
 			c.closeChan = make(chan struct{}) // channel to tell send loop stop
 			reauthChan := make(chan struct{}) // channel to tell send loop that authdata has been resubmitted
@@ -444,7 +477,9 @@ func (c *Conn) loop() {
 			go func() {
 				<-reauthChan
 				err := c.sendLoop()
-				c.logger.Printf("Send loop terminated: err=%v", err)
+				if err != nil || c.logInfo {
+					c.logger.Printf("Send loop terminated: err=%v", err)
+				}
 				c.conn.Close() // causes recv loop to EOF/exit
 				wg.Done()
 			}()
@@ -452,7 +487,9 @@ func (c *Conn) loop() {
 			wg.Add(1)
 			go func() {
 				err := c.recvLoop(c.conn)
-				c.logger.Printf("Recv loop terminated: err=%v", err)
+				if err != io.EOF || c.logInfo {
+					c.logger.Printf("Recv loop terminated: err=%v", err)
+				}
 				if err == nil {
 					panic("zk: recvLoop should never return nil error")
 				}
@@ -906,12 +943,20 @@ func (c *Conn) AddAuth(scheme string, auth []byte) error {
 }
 
 func (c *Conn) Children(path string) ([]string, *Stat, error) {
+	if err := validatePath(path, false); err != nil {
+		return nil, nil, err
+	}
+
 	res := &getChildren2Response{}
 	_, err := c.request(opGetChildren2, &getChildren2Request{Path: path, Watch: false}, res, nil)
 	return res.Children, &res.Stat, err
 }
 
 func (c *Conn) ChildrenW(path string) ([]string, *Stat, <-chan Event, error) {
+	if err := validatePath(path, false); err != nil {
+		return nil, nil, nil, err
+	}
+
 	var ech <-chan Event
 	res := &getChildren2Response{}
 	_, err := c.request(opGetChildren2, &getChildren2Request{Path: path, Watch: true}, res, func(req *request, res *responseHeader, err error) {
@@ -926,6 +971,10 @@ func (c *Conn) ChildrenW(path string) ([]string, *Stat, <-chan Event, error) {
 }
 
 func (c *Conn) Get(path string) ([]byte, *Stat, error) {
+	if err := validatePath(path, false); err != nil {
+		return nil, nil, err
+	}
+
 	res := &getDataResponse{}
 	_, err := c.request(opGetData, &getDataRequest{Path: path, Watch: false}, res, nil)
 	return res.Data, &res.Stat, err
@@ -933,6 +982,10 @@ func (c *Conn) Get(path string) ([]byte, *Stat, error) {
 
 // GetW returns the contents of a znode and sets a watch
 func (c *Conn) GetW(path string) ([]byte, *Stat, <-chan Event, error) {
+	if err := validatePath(path, false); err != nil {
+		return nil, nil, nil, err
+	}
+
 	var ech <-chan Event
 	res := &getDataResponse{}
 	_, err := c.request(opGetData, &getDataRequest{Path: path, Watch: true}, res, func(req *request, res *responseHeader, err error) {
@@ -947,15 +1000,20 @@ func (c *Conn) GetW(path string) ([]byte, *Stat, <-chan Event, error) {
 }
 
 func (c *Conn) Set(path string, data []byte, version int32) (*Stat, error) {
-	if path == "" {
-		return nil, ErrInvalidPath
+	if err := validatePath(path, false); err != nil {
+		return nil, err
 	}
+
 	res := &setDataResponse{}
 	_, err := c.request(opSetData, &SetDataRequest{path, data, version}, res, nil)
 	return &res.Stat, err
 }
 
 func (c *Conn) Create(path string, data []byte, flags int32, acl []ACL) (string, error) {
+	if err := validatePath(path, flags&FlagSequence == FlagSequence); err != nil {
+		return "", err
+	}
+
 	res := &createResponse{}
 	_, err := c.request(opCreate, &CreateRequest{path, data, acl, flags}, res, nil)
 	return res.Path, err
@@ -966,6 +1024,10 @@ func (c *Conn) Create(path string, data []byte, flags int32, acl []ACL) (string,
 // ephemeral node still exists. Therefore, on reconnect we need to check if a node
 // with a GUID generated on create exists.
 func (c *Conn) CreateProtectedEphemeralSequential(path string, data []byte, acl []ACL) (string, error) {
+	if err := validatePath(path, true); err != nil {
+		return "", err
+	}
+
 	var guid [16]byte
 	_, err := io.ReadFull(rand.Reader, guid[:16])
 	if err != nil {
@@ -1007,11 +1069,19 @@ func (c *Conn) CreateProtectedEphemeralSequential(path string, data []byte, acl 
 }
 
 func (c *Conn) Delete(path string, version int32) error {
+	if err := validatePath(path, false); err != nil {
+		return err
+	}
+
 	_, err := c.request(opDelete, &DeleteRequest{path, version}, &deleteResponse{}, nil)
 	return err
 }
 
 func (c *Conn) Exists(path string) (bool, *Stat, error) {
+	if err := validatePath(path, false); err != nil {
+		return false, nil, err
+	}
+
 	res := &existsResponse{}
 	_, err := c.request(opExists, &existsRequest{Path: path, Watch: false}, res, nil)
 	exists := true
@@ -1023,6 +1093,10 @@ func (c *Conn) Exists(path string) (bool, *Stat, error) {
 }
 
 func (c *Conn) ExistsW(path string) (bool, *Stat, <-chan Event, error) {
+	if err := validatePath(path, false); err != nil {
+		return false, nil, nil, err
+	}
+
 	var ech <-chan Event
 	res := &existsResponse{}
 	_, err := c.request(opExists, &existsRequest{Path: path, Watch: true}, res, func(req *request, res *responseHeader, err error) {
@@ -1044,17 +1118,29 @@ func (c *Conn) ExistsW(path string) (bool, *Stat, <-chan Event, error) {
 }
 
 func (c *Conn) GetACL(path string) ([]ACL, *Stat, error) {
+	if err := validatePath(path, false); err != nil {
+		return nil, nil, err
+	}
+
 	res := &getAclResponse{}
 	_, err := c.request(opGetAcl, &getAclRequest{Path: path}, res, nil)
 	return res.Acl, &res.Stat, err
 }
 func (c *Conn) SetACL(path string, acl []ACL, version int32) (*Stat, error) {
+	if err := validatePath(path, false); err != nil {
+		return nil, err
+	}
+
 	res := &setAclResponse{}
 	_, err := c.request(opSetAcl, &setAclRequest{Path: path, Acl: acl, Version: version}, res, nil)
 	return &res.Stat, err
 }
 
 func (c *Conn) Sync(path string) (string, error) {
+	if err := validatePath(path, false); err != nil {
+		return "", err
+	}
+
 	res := &syncResponse{}
 	_, err := c.request(opSync, &syncRequest{Path: path}, res, nil)
 	return res.Path, err
