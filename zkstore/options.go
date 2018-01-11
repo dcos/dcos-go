@@ -11,6 +11,7 @@ import (
 // Returns ErrIllegalOption if the option configuration cannot be applied to the store.
 type StoreOpt func(store *Store) error
 
+// Apply is a convenience method that handles nil StoreOpt funcs w/ aplomb: it is perfectly legal to invoke StoreOpt(nil).Apply(someStore).
 func (f StoreOpt) Apply(store *Store) error {
 	if f != nil {
 		return f(store)

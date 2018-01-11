@@ -6,14 +6,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Version represents an optional ZK version number.
 type Version struct {
 	int32
 	hasVersion bool
 }
 
+// Value returns true with a real ZK version number, false when there is no value.
 func (v Version) Value() (int32, bool) { return v.int32, v.hasVersion }
-func (v *Version) Clear()              { v.hasVersion = false }
-func NewVersion(v int32) Version       { return Version{hasVersion: true, int32: v} }
+
+// Clear erases the real ZK version number. Future calls to Version will return false.
+func (v *Version) Clear() { v.hasVersion = false }
+
+// NewVersion returns a ZK version w/ the given value. Future calls to Version will return true.
+func NewVersion(v int32) Version { return Version{hasVersion: true, int32: v} }
 
 // Ident specifies the location of a stored item
 type Ident struct {

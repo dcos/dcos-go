@@ -11,7 +11,7 @@ type HashProviderFunc func(string) (uint64, error)
 
 // DefaultHashProviderFunc is the default provider of hash functions
 // unless overriden with OptHashProviderFunc when building the Store.
-var DefaultHashProviderFunc HashProviderFunc = HashProvider(md5.New)
+var DefaultHashProviderFunc = HashProvider(md5.New)
 
 // hashBytesToBucket produces a positive int from a hashed byte slice
 func hashBytesToBucket(bucketCount int, res uint64) int {
@@ -37,7 +37,7 @@ func HashProvider(f func() hash.Hash) HashProviderFunc {
 		y, z := binary.Uvarint(hash)
 		if z < 0 {
 			// should never happen since we cap the length of the buffer before decoding
-			return 0, ErrHashOverflow
+			return 0, errHashOverflow
 		}
 		return y, nil
 	}

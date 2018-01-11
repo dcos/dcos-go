@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// MaxDataSize represents the size of the largest data blob that a caller can store.
 const MaxDataSize = 1024 * 1024
 
 // Item represents the data of a particular item in the store
