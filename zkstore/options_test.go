@@ -12,30 +12,30 @@ import (
 func TestOptBasePath(t *testing.T) {
 	require := require.New(t)
 	store := &Store{}
-	require.EqualError(OptBasePath("foo")(store), "basePath must start with /")
+	require.EqualError(OptBasePath("foo")(store), ErrIllegalOption.Error())
 	require.NoError(OptBasePath("/foo")(store))
 }
 
 func TestOptHashBuckets(t *testing.T) {
 	require := require.New(t)
 	store := &Store{}
-	require.EqualError(OptNumHashBuckets(0)(store), "numBuckets must be positive")
-	require.EqualError(OptNumHashBuckets(-1)(store), "numBuckets must be positive")
-	require.NoError(OptNumHashBuckets(1)(store))
+	require.NoError(OptNumHashBuckets(0).Apply(store))
+	require.EqualError(OptNumHashBuckets(-1).Apply(store), ErrIllegalOption.Error())
+	require.NoError(OptNumHashBuckets(1).Apply(store))
 }
 
 func TestOptACL(t *testing.T) {
 	require := require.New(t)
 	store := &Store{}
-	require.EqualError(OptACL(nil)(store), "ACL required")
-	require.EqualError(OptACL([]zk.ACL{})(store), "ACL required")
-	require.NoError(OptACL(zk.WorldACL(zk.PermAll))(store))
+	require.NoError(OptACL(nil).Apply(store))
+	require.NoError(OptACL([]zk.ACL{}).Apply(store))
+	require.NoError(OptACL(zk.WorldACL(zk.PermAll)).Apply(store))
 }
 
 func TestOptHashProviderFunc(t *testing.T) {
 	require := require.New(t)
 	store := &Store{}
-	require.EqualError(OptHashProviderFunc(nil)(store), "hash provider func required")
-	require.NoError(OptHashProviderFunc(md5.New)(store))
-	require.NoError(OptHashProviderFunc(sha1.New)(store))
+	require.NoError(OptHashProviderFunc(nil).Apply(store))
+	require.NoError(OptHashProviderFunc(HashProvider(md5.New)).Apply(store))
+	require.NoError(OptHashProviderFunc(HashProvider(sha1.New)).Apply(store))
 }

@@ -6,10 +6,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const MaxDataSize = 1024 * 1024
+
 // Item represents the data of a particular item in the store
 type Item struct {
 	// Ident identifies an Item in the ZK backend.
-	Ident Ident
+	Ident
 
 	// Data represents the bytes to be stored within the znode.
 	Data []byte
@@ -20,12 +22,12 @@ func (i Item) Validate() error {
 	if err := i.Ident.Validate(); err != nil {
 		return err
 	}
-	if len(i.Data) > 1024*1024 {
+	if len(i.Data) > MaxDataSize {
 		return errors.New("data is greater than 1MB")
 	}
 	return nil
 }
 
 func (i Item) String() string {
-	return fmt.Sprintf("{ident=%v data=%dB}", i.Ident, len(i.Data))
+	return fmt.Sprintf("{ident=%v datalen=%dB}", i.Ident, len(i.Data))
 }

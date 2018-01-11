@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"io"
+	"sort"
 	"testing"
 
 	"github.com/dcos/dcos-go/testutils"
@@ -40,6 +41,7 @@ func TestExpectedBehavior(t *testing.T) {
 	locations, found, err = store.List("widgets")
 	require.NoError(err)
 	require.True(found)
+	sort.Slice(LocationsByName(locations))
 	require.EqualValues([]Location{
 		{Category: "widgets", Name: "item1"},
 		{Category: "widgets", Name: "item2"},
@@ -47,7 +49,7 @@ func TestExpectedBehavior(t *testing.T) {
 
 	// set a version on item1
 	_, err = store.Put(Item{
-		Ident: Ident{Location: Location{Category: "widgets", Name: "item1"}, Version: "v2"},
+		Ident: Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"},
 		Data:  []byte("item1v2"),
 	})
 	require.NoError(err)
@@ -56,6 +58,7 @@ func TestExpectedBehavior(t *testing.T) {
 	locations, found, err = store.List("widgets")
 	require.NoError(err)
 	require.True(found)
+	sort.Slice(LocationsByName(locations))
 	require.EqualValues([]Location{
 		{Category: "widgets", Name: "item1"},
 		{Category: "widgets", Name: "item2"},
@@ -68,7 +71,7 @@ func TestExpectedBehavior(t *testing.T) {
 	require.EqualValues([]string{"v2"}, versions)
 
 	// fetch a particular version
-	item, found, err := store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Version: "v2"})
+	item, found, err := store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"})
 	require.NoError(err)
 	require.True(found)
 	require.EqualValues("item1v2", string(item.Data))
@@ -85,7 +88,7 @@ func TestExpectedBehavior(t *testing.T) {
 	require.False(found)
 
 	// try to delete a version that doesn't exist
-	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item-none"}, Version: "v2"})
+	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item-none"}, Variant: "v2"})
 	require.NoError(err)
 	require.False(found)
 
@@ -129,7 +132,7 @@ func TestExpectedBehavior(t *testing.T) {
 	require.False(found)
 
 	// verify that its version was also deleted
-	item, found, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Version: "v2"})
+	item, found, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"})
 	require.NoError(err)
 	require.False(found)
 }
@@ -156,7 +159,7 @@ func TestVersionParentNodeDataIsNotSetIfItAlreadyExists(t *testing.T) {
 				Category: "/widgets",
 				Name:     "foo",
 			},
-			Version: "my-version",
+			Variant: "my-version",
 		},
 		Data: []byte("child"),
 	})
@@ -186,7 +189,7 @@ func TestVersionParentNodeIsSetIfItDoesNotExist(t *testing.T) {
 				Category: "/widgets",
 				Name:     "foo",
 			},
-			Version: "my-version",
+			Variant: "my-version",
 		},
 		Data: []byte("hello"),
 	})
@@ -205,10 +208,10 @@ func TestVersionParentNodeIsSetIfItDoesNotExist(t *testing.T) {
 	require.Equal("hello", string(data))
 }
 
-// If the ZKVersion is set on an Ident, we need to ensure that the underlying
+// If the Version is set on an Ident, we need to ensure that the underlying
 // store respects that and rejects operations for which a version was
 // different from that which was specified.
-func TestZKVersionsRespected(t *testing.T) {
+func TestVersion(t *testing.T) {
 	store, _, teardown := newStoreTest(t, fixedBucketFunc(42), OptBasePath("/storage"))
 	defer teardown()
 	require := require.New(t)
@@ -220,7 +223,7 @@ func TestZKVersionsRespected(t *testing.T) {
 					Category: "/widgets",
 					Name:     "foo",
 				},
-				Version: "my-version",
+				Variant: "my-version",
 			},
 			Data: []byte("hello"),
 		}
@@ -228,43 +231,43 @@ func TestZKVersionsRespected(t *testing.T) {
 
 	// this should fail because the item does not exist yet
 	item := newItem()
-	item.Ident.SetZKVersion(42) // invalid
+	item.Ident.Version = NewVersion(42) // invalid
 	ident, err := store.Put(item)
 	require.Equal(ErrVersionConflict, err)
 
 	item = newItem()
 	ident, err = store.Put(item)
 	require.NoError(err)
-	require.EqualValues(0, *ident.ZKVersion)
+	require.EqualValues(0, ident.actualVersion())
 
 	// put the same item again, verify its zkVersion==1
 	item = newItem()
 	ident, err = store.Put(item)
 	require.NoError(err)
-	require.EqualValues(1, *ident.ZKVersion)
+	require.EqualValues(1, ident.actualVersion())
 
 	// put the same item, but set it to use zkversion=1
 	item = newItem()
-	item.Ident.SetZKVersion(1)
+	item.Ident.Version = NewVersion(1)
 	ident, err = store.Put(item)
 	require.NoError(err)
-	require.EqualValues(2, *ident.ZKVersion)
+	require.EqualValues(2, ident.actualVersion())
 
 	// put the same item, but set a previous version
 	item = newItem()
-	item.Ident.SetZKVersion(1)
+	item.Ident.Version = NewVersion(1)
 	ident, err = store.Put(item)
 	require.EqualValues(ErrVersionConflict, err)
 
 	// at this point, our stored item is still at version 2
 	// we should get a conflict if we try to delete version 1
 	item = newItem()
-	item.Ident.SetZKVersion(1)
+	item.Ident.Version = NewVersion(1)
 	_, err = store.Delete(item.Ident)
 	require.EqualValues(ErrVersionConflict, err)
 }
 
-func TestZKVersionIsIncrementedOnPut(t *testing.T) {
+func TestVersionIsIncrementedOnPut(t *testing.T) {
 	store, _, teardown := newStoreTest(t, fixedBucketFunc(42), OptBasePath("/storage"))
 	defer teardown()
 	require := require.New(t)
@@ -281,9 +284,9 @@ func TestZKVersionIsIncrementedOnPut(t *testing.T) {
 			Data: []byte("hello"),
 		})
 		require.NoError(err)
-		copy := ident
-		copy.SetZKVersion(int32(i))
-		require.EqualValues(copy, ident)
+		clone := ident
+		clone.Version = NewVersion(int32(i))
+		require.EqualValues(clone, ident)
 	}
 
 	// test zk versions for version nodes
@@ -294,14 +297,14 @@ func TestZKVersionIsIncrementedOnPut(t *testing.T) {
 					Category: "/widgets",
 					Name:     "foo",
 				},
-				Version: "my-version",
+				Variant: "my-version",
 			},
 			Data: []byte("hello"),
 		})
 		require.NoError(err)
-		copy := ident
-		copy.SetZKVersion(int32(i))
-		require.EqualValues(copy, ident)
+		clone := ident
+		clone.Version = NewVersion(int32(i))
+		require.EqualValues(clone, ident)
 	}
 }
 
@@ -313,7 +316,7 @@ func TestListLocations(t *testing.T) {
 	_, err := store.Put(Item{
 		Ident: Ident{
 			Location: Location{Category: "widgets/2017", Name: "foo"},
-			Version:  "my-version",
+			Variant:  "my-version",
 		},
 		Data: []byte("hello"),
 	})
@@ -321,7 +324,7 @@ func TestListLocations(t *testing.T) {
 	_, err = store.Put(Item{
 		Ident: Ident{
 			Location: Location{Category: "widgets/2017", Name: "bar"},
-			Version:  "my-version",
+			Variant:  "my-version",
 		},
 		Data: []byte("hello"),
 	})
@@ -346,9 +349,9 @@ func TestBucketDistribution(t *testing.T) {
 		hashProviderFunc HashProviderFunc
 	}
 	for _, test := range []hashTest{
-		{"md5", md5.New},
-		{"sha", sha1.New},
-		{"sha512", sha512.New},
+		{"md5", HashProvider(md5.New)},
+		{"sha", HashProvider(sha1.New)},
+		{"sha512", HashProvider(sha512.New)},
 	} {
 		require := require.New(t)
 		numBuckets := 1024

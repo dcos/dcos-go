@@ -25,14 +25,14 @@ func TestIdentValidate(t *testing.T) {
 			errMsg: "invalid location: invalid name: must match " + validNameRE.String(),
 		},
 		{
-			ident:  Ident{Location: Location{Name: "foo", Category: "widgets"}, Version: "invalid/version"},
-			errMsg: "invalid version: must match " + validNameRE.String(),
+			ident:  Ident{Location: Location{Name: "foo", Category: "widgets"}, Variant: "invalid/version"},
+			errMsg: "invalid variant: must match " + validNameRE.String(),
 		},
 		{
-			ident: Ident{Location: Location{Name: "foo", Category: "widgets"}, Version: "my-version"},
+			ident: Ident{Location: Location{Name: "foo", Category: "widgets"}, Variant: "my-version"},
 		},
 		{
-			ident: Ident{Location: Location{Name: "foo", Category: "widgets/2017"}, Version: "my-version"},
+			ident: Ident{Location: Location{Name: "foo", Category: "widgets/2017"}, Variant: "my-version"},
 		},
 	} {
 		err := test.ident.Validate()
@@ -42,14 +42,22 @@ func TestIdentValidate(t *testing.T) {
 	}
 }
 
-func TestActualZKVersion(t *testing.T) {
+func TestActualVersion(t *testing.T) {
 	require := require.New(t)
+
 	ident := Ident{}
-	require.EqualValues(-1, ident.actualZKVersion())
-	ident.SetZKVersion(0)
-	require.EqualValues(0, ident.actualZKVersion())
-	ident.SetZKVersion(1)
-	require.EqualValues(1, ident.actualZKVersion())
-	ident.SetZKVersion(-1)
-	require.EqualValues(-1, ident.actualZKVersion())
+	require.EqualValues(-1, ident.actualVersion())
+	require.False(ident.Version.hasVersion)
+
+	ident.Version = NewVersion(0)
+	require.EqualValues(0, ident.actualVersion())
+	require.True(ident.Version.hasVersion)
+
+	ident.Version = NewVersion(1)
+	require.EqualValues(1, ident.actualVersion())
+	require.True(ident.Version.hasVersion)
+
+	ident.Version = NewVersion(-1)
+	require.EqualValues(-1, ident.actualVersion())
+	require.True(ident.Version.hasVersion)
 }

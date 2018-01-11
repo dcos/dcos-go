@@ -1,37 +1,13 @@
 package zkstore
 
 import (
-	"bytes"
-	"crypto/md5"
-	"encoding/binary"
-	"hash"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
-
-// IStore is the interface to which Store confirms. Documentation for these
-// methods lives on the concrete Store type, as the NewStore method returns
-// a concrete type, not this interface.  Clients may choose to use the IStore
-// interface if they wish.
-type IStore interface {
-	Put(item Item) (Ident, error)
-	Get(ident Ident) (item Item, found bool, err error)
-	List(category string) (locations []Location, found bool, err error)
-	Versions(location Location) (versions []string, found bool, err error)
-	Delete(ident Ident) (found bool, err error)
-	Close() error
-}
-
-// ensure that Store confirms to the IStore interface.
-var _ IStore = &Store{}
-
-// HashProviderFunc is a factory for hashers.
-type HashProviderFunc func() hash.Hash
 
 // Store exposes an API for performing CRUD operations against a backing
 // ZK cluster.
@@ -63,15 +39,6 @@ const (
 )
 
 var (
-	// ErrVersionConflict is returned when a specified ZKVersion is rejected by
-	// ZK when performing a mutating operation on a znode.  Clients that receive
-	// this can retry by re-reading the Item and then trying again.
-	ErrVersionConflict = errors.New("zk version conflict")
-
-	// DefaultHashProviderFunc is the default provider of hash functions
-	// unless overriden with OptHashProviderFunc when building the Store.
-	DefaultHashProviderFunc HashProviderFunc = md5.New
-
 	// DefaultZKACL is the default ACL set that will be used when creating
 	// nodes in ZK unless overridden with OptACL when building the Store.
 	DefaultZKACL = zk.WorldACL(zk.PermAll)
@@ -92,10 +59,7 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 		hashProviderFunc: DefaultHashProviderFunc,
 	}
 	for _, opt := range opts {
-		if opt == nil {
-			return nil, errors.New("nil opt")
-		}
-		if err := opt(store); err != nil {
+		if err := opt.Apply(store); err != nil {
 			return nil, err
 		}
 	}
@@ -104,7 +68,7 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 
 // Put stores the specified item.  If successful, an Ident will be returned
 // that reflects the updated metadata for that item (specifically, the
-// ZKVersion)
+// Version)
 //
 // If a client attempts to set an Item with a Version, and the current
 // item (with no Version) does not exist yet, the current item will be
@@ -119,7 +83,7 @@ func (s *Store) Put(item Item) (Ident, error) {
 			return err
 		}
 		// shortcut: try to set it if it already exists
-		stat, err := s.conn.Set(identPath, item.Data, item.Ident.actualZKVersion())
+		stat, err := s.conn.Set(identPath, item.Data, item.Ident.actualVersion())
 		switch {
 		case err == zk.ErrNoNode:
 			// it didn't exist, so take the more expensive path
@@ -133,7 +97,7 @@ func (s *Store) Put(item Item) (Ident, error) {
 		case stat == nil:
 			return errors.Errorf("could not stat %v", identPath)
 		}
-		item.Ident.SetZKVersion(stat.Version)
+		item.Ident.Version = NewVersion(stat.Version)
 		return nil
 	}()
 	return item.Ident, err
@@ -158,7 +122,7 @@ func (s *Store) setFully(item Item) (stat *zk.Stat, err error) {
 				return errors.Wrapf(err, "could not check %v", current)
 			case exists:
 				continue
-			case isLast && item.Ident.actualZKVersion() >= 0:
+			case isLast && item.Ident.actualVersion() >= 0:
 				// specifying a new version on a non-existent node
 				// is not supported
 				return ErrVersionConflict
@@ -166,10 +130,10 @@ func (s *Store) setFully(item Item) (stat *zk.Stat, err error) {
 			// this node does not exist. try to create it.
 			var nodeData []byte
 
-			// if the item has a version, and its parent node does
+			// if the item has a variant, and its parent node does
 			// not yet exist, we set the content on the parent
-			// node as well as the version node.
-			isParentOfVersion := item.Ident.Version != "" && i == len(segments)-2
+			// node as well as the variant node.
+			isParentOfVersion := item.Ident.Variant != "" && i == len(segments)-2
 			if isLast || isParentOfVersion {
 				nodeData = item.Data
 			}
@@ -181,7 +145,7 @@ func (s *Store) setFully(item Item) (stat *zk.Stat, err error) {
 		stat, err = s.mustExist(identPath)
 		return errors.Wrapf(err, "%v was not created", identPath)
 	}()
-	return stat, err
+	return
 }
 
 // Get fetches the data for a particuar item. If a particluar version is
@@ -205,15 +169,14 @@ func (s *Store) Get(ident Ident) (item Item, found bool, err error) {
 		}
 		item.Ident = ident
 		item.Data = data
-		item.Ident.SetZKVersion(stat.Version)
+		item.Ident.Version = NewVersion(stat.Version)
 		found = true
 		return nil
 	}()
-	return item, found, err
+	return
 }
 
-// Versions fetches all of the versions for a particular item. The versions
-// returned for the item will be the sorted names of the versions.
+// Versions fetches all of the versions for a particular item.
 //
 // If the item does not exist, found will be false, otherwise true.
 func (s *Store) Versions(location Location) (versions []string, found bool, err error) {
@@ -235,12 +198,10 @@ func (s *Store) Versions(location Location) (versions []string, found bool, err 
 		case err != nil:
 			return err
 		}
-		// always sort versions for consistency
-		sort.Strings(versions)
 		found = true
 		return nil
 	}()
-	return versions, found, err
+	return
 }
 
 // Delete deletes the identified item.  If successful, true will be returned.
@@ -249,8 +210,8 @@ func (s *Store) Delete(ident Ident) (found bool, err error) {
 	if err = ident.Validate(); err != nil {
 		return false, err
 	}
-	if ident.Version != "" {
-		return s.deleteVersion(ident)
+	if ident.Variant != "" {
+		return s.deleteVariant(ident)
 	}
 	return s.deleteItem(ident)
 }
@@ -258,8 +219,8 @@ func (s *Store) Delete(ident Ident) (found bool, err error) {
 // deleteItem deletes the item and all versions within it
 func (s *Store) deleteItem(ident Ident) (found bool, err error) {
 	err = func() error {
-		var versions []string
-		versions, found, err = s.Versions(ident.Location)
+		var variants []string
+		variants, found, err = s.Versions(ident.Location)
 		switch {
 		case err != nil:
 			return err
@@ -267,12 +228,12 @@ func (s *Store) deleteItem(ident Ident) (found bool, err error) {
 			// the item could not be found. leave found=false and return
 			return nil
 		}
-		// delete each version of the specified item
-		for _, version := range versions {
-			versionIdent := ident
-			versionIdent.Version = version
-			versionIdent.ZKVersion = nil // force delete it no matter the zk version
-			if _, err = s.deleteVersion(versionIdent); err != nil {
+		// delete each variant of the specified item
+		for _, v := range variants {
+			variant := ident
+			variant.Variant = v
+			variant.Version = Version{} // force delete it no matter the zk version
+			if _, err = s.deleteVariant(variant); err != nil {
 				return err
 			}
 		}
@@ -281,7 +242,7 @@ func (s *Store) deleteItem(ident Ident) (found bool, err error) {
 		if err != nil {
 			return err
 		}
-		err = s.conn.Delete(identPath, ident.actualZKVersion())
+		err = s.conn.Delete(identPath, ident.actualVersion())
 		switch err {
 		case zk.ErrNoNode:
 			return nil
@@ -290,17 +251,17 @@ func (s *Store) deleteItem(ident Ident) (found bool, err error) {
 		}
 		return err
 	}()
-	return found, err
+	return
 }
 
-// deleteVersion deletes only an item version
-func (s *Store) deleteVersion(ident Ident) (found bool, err error) {
+// deleteVariant deletes only an item variant
+func (s *Store) deleteVariant(ident Ident) (found bool, err error) {
 	err = func() error {
 		identPath, err := s.identPath(ident)
 		if err != nil {
 			return err
 		}
-		err = s.conn.Delete(identPath, ident.actualZKVersion())
+		err = s.conn.Delete(identPath, ident.actualVersion())
 		switch err {
 		case zk.ErrNoNode:
 			// perhaps someone already deleted it? leave found==false
@@ -311,11 +272,11 @@ func (s *Store) deleteVersion(ident Ident) (found bool, err error) {
 		found = true
 		return err
 	}()
-	return found, err
+	return
 }
 
 // List lists all of the known, latest version Locations that exist under
-// the specified category.  The locations will be sorted by Location Name.
+// the specified category.
 // If the category could not be found, found will be set to false.
 func (s *Store) List(category string) (locations []Location, found bool, err error) {
 	err = func() error {
@@ -353,10 +314,15 @@ func (s *Store) List(category string) (locations []Location, found bool, err err
 		}
 		return nil
 	}()
-	sort.Slice(locations, func(i, j int) bool {
+	return
+}
+
+// LocationsByName returns a sort function helper that may be passed to sort.Slice in order to sort
+// a slice of Location structs.
+func LocationsByName(locations []Location) (interface{}, func(_, _ int) bool) {
+	return locations, func(i, j int) bool {
 		return locations[i].Name < locations[j].Name
-	})
-	return locations, found, err
+	}
 }
 
 // Close shuts down the Store
@@ -380,7 +346,7 @@ func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
 		}
 		return nil
 	}()
-	return stat, err
+	return
 }
 
 // identPath returns the full path of the item pointed to by the Ident
@@ -397,7 +363,7 @@ func (s *Store) identPath(ident Ident) (string, error) {
 		bucketsPath,
 		strconv.Itoa(bucket),
 		ident.Location.Name,
-		ident.Version,
+		ident.Variant,
 	), nil
 }
 
@@ -422,25 +388,9 @@ func (s *Store) bucketFor(name string) (int, error) {
 	if s.bucketFunc != nil {
 		return s.bucketFunc(name)
 	}
-	hasher := s.hashProviderFunc()
-	_, err := hasher.Write([]byte(name))
+	hash, err := s.hashProviderFunc(name)
 	if err != nil {
 		return 0, err
 	}
-	hash := hasher.Sum(nil)
-	return s.hashBytesToBucket(hash)
-}
-
-// hashBytesToBucket produces a positive int from a hashed byte slice
-func (s *Store) hashBytesToBucket(hash []byte) (int, error) {
-	var res int64
-	reader := bytes.NewReader(hash[len(hash)-8:])
-	if err := binary.Read(reader, binary.LittleEndian, &res); err != nil {
-		return 0, err
-	}
-	mod := int(res) % s.hashBuckets
-	if mod < 0 {
-		mod = mod * -1
-	}
-	return mod, nil
+	return hashBytesToBucket(s.hashBuckets, hash), nil
 }

@@ -6,27 +6,31 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Version struct {
+	int32
+	hasVersion bool
+}
+
+func (v Version) Value() (int32, bool) { return v.int32, v.hasVersion }
+func (v *Version) Clear()              { v.hasVersion = false }
+func NewVersion(v int32) Version       { return Version{hasVersion: true, int32: v} }
+
 // Ident specifies the location of a stored item
 type Ident struct {
 	// Location points to where an item lives in the store.
-	Location Location
+	Location
 
-	// Version, if specified, specifies a named version of the data
-	Version string
+	// Variant, if specified, specifies a named version of the data.
+	Variant string
 
-	// ZKVersion specifies the ZK version of the data.  This will be
-	// used to prevent accidental overwrites.  If ZKVersion is nil,
+	// Version specifies the ZK version of the data.  This will be
+	// used to prevent accidental overwrites.  If Version is nil,
 	// then the version will not be considered for operations.
-	ZKVersion *int32
-}
-
-// SetZKVersion sets the pointer of the argument as the ZK version on the Ident
-func (i *Ident) SetZKVersion(version int32) {
-	i.ZKVersion = &version
+	Version Version
 }
 
 func (i Ident) String() string {
-	return fmt.Sprintf("{loc=%v ver=%v zkVer=%v}", i.Location, i.Version, i.ZKVersion)
+	return fmt.Sprintf("{loc=%v var=%v ver=%v}", i.Location, i.Variant, i.Version)
 }
 
 // Validate performs validation on the Ident
@@ -34,17 +38,18 @@ func (i Ident) Validate() error {
 	if err := i.Location.Validate(); err != nil {
 		return errors.Wrap(err, "invalid location")
 	}
-	if err := validateNamed(i.Version, false); err != nil {
-		return errors.Wrap(err, "invalid version")
+	if err := validateNamed(i.Variant, false); err != nil {
+		return errors.Wrap(err, "invalid variant")
 	}
 	return nil
 }
 
-// actualZKVersion converts the *int32 into a version recognized by ZK.  ZK
+// actualVersion converts the *int32 into a version recognized by ZK.  ZK
 // expects a -1 if the version should be ignored.
-func (i Ident) actualZKVersion() int32 {
-	if i.ZKVersion == nil {
+func (i Ident) actualVersion() int32 {
+	v, ok := i.Version.Value()
+	if !ok {
 		return -1
 	}
-	return *i.ZKVersion
+	return v
 }
