@@ -294,6 +294,10 @@ func (s *Store) List(category string) (locations []Location, found bool, err err
 		case err != nil:
 			return err
 		}
+		if len(buckets) == 0 {
+			return nil
+		}
+		locations = make([]Location, 0, len(buckets))
 		found = true
 		for _, bucket := range buckets {
 			children, _, err := s.conn.Children(path.Join(bucketsPath, bucket))
@@ -305,10 +309,10 @@ func (s *Store) List(category string) (locations []Location, found bool, err err
 				return err
 			}
 			for _, child := range children {
-				pieces := strings.Split(child, "/")
+				leaf := path.Base(child)
 				locations = append(locations, Location{
 					Category: category,
-					Name:     pieces[len(pieces)-1],
+					Name:     leaf,
 				})
 			}
 		}
@@ -371,8 +375,8 @@ func (s *Store) identPath(ident Ident) (string, error) {
 // an error will be returned if the category ends with the name of the buckets
 // znode name.
 func (s *Store) bucketsPath(category string) (string, error) {
-	segments := strings.Split(path.Clean(category), "/")
-	if segments[len(segments)-1] == s.bucketsZnodeName {
+	leaf := path.Base(path.Clean(category))
+	if leaf == s.bucketsZnodeName {
 		return "", errors.New("category may not end with the buckets znode name")
 	}
 	return path.Join(
