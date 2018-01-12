@@ -15,5 +15,10 @@ const (
 	// this can retry by re-reading the Item and then trying again.
 	ErrVersionConflict = internalError("zk version conflict")
 
+	// ErrNotFound is returned when an attempting to read a znode that does not exist.
+	ErrNotFound = internalError("znode not found")
+
 	errHashOverflow = internalError("hash value larger than 64 bits")
+
+	errBadCategory = internalError("bad category name")
 )

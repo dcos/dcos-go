@@ -19,9 +19,8 @@ func TestExpectedBehavior(t *testing.T) {
 	defer teardown()
 	require := require.New(t)
 
-	locations, found, err := store.List("widgets")
-	require.NoError(err)
-	require.False(found)
+	locations, err := store.List("widgets")
+	require.EqualValues(err, ErrNotFound)
 	require.Nil(locations)
 
 	item1 := Item{
@@ -38,9 +37,8 @@ func TestExpectedBehavior(t *testing.T) {
 	_, err = store.Put(item2)
 	require.NoError(err)
 
-	locations, found, err = store.List("widgets")
+	locations, err = store.List("widgets")
 	require.NoError(err)
-	require.True(found)
 	sort.Slice(LocationsByName(locations))
 	require.EqualValues([]Location{
 		{Category: "widgets", Name: "item1"},
@@ -55,57 +53,48 @@ func TestExpectedBehavior(t *testing.T) {
 	require.NoError(err)
 
 	// locations should not include versions
-	locations, found, err = store.List("widgets")
+	locations, err = store.List("widgets")
 	require.NoError(err)
-	require.True(found)
 	sort.Slice(LocationsByName(locations))
 	require.EqualValues([]Location{
 		{Category: "widgets", Name: "item1"},
 		{Category: "widgets", Name: "item2"},
 	}, locations)
 
-	// we can get the versions for an item if we ask for it specifically
-	versions, found, err := store.Versions(Location{Category: "widgets", Name: "item1"})
+	// we can get the variants for an item if we ask for it specifically
+	variants, err := store.Variants(Location{Category: "widgets", Name: "item1"})
 	require.NoError(err)
-	require.True(found)
-	require.EqualValues([]string{"v2"}, versions)
+	require.EqualValues([]string{"v2"}, variants)
 
 	// fetch a particular version
-	item, found, err := store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"})
+	item, err := store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"})
 	require.NoError(err)
-	require.True(found)
 	require.EqualValues("item1v2", string(item.Data))
 
 	// we should still be able to fetch the first one
-	item, found, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}})
+	item, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}})
 	require.NoError(err)
-	require.True(found)
 	require.EqualValues("item1", string(item.Data))
 
 	// try to delete a node that doesn't exist
-	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item-none"}})
+	err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item-none"}})
 	require.NoError(err)
-	require.False(found)
 
 	// try to delete a version that doesn't exist
-	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item-none"}, Variant: "v2"})
+	err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item-none"}, Variant: "v2"})
 	require.NoError(err)
-	require.False(found)
 
 	// delete the node without any children
-	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item2"}})
+	err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item2"}})
 	require.NoError(err)
-	require.True(found)
 
 	// try to query the node after you deleted it
-	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item2"}})
+	err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item2"}})
 	require.NoError(err)
-	require.False(found)
 
 	// query the locations for the widgets category. we should only have one now.
-	locations, found, err = store.List("widgets")
+	locations, err = store.List("widgets")
 	require.NoError(err)
-	require.True(found)
 	require.EqualValues([]Location{{Category: "widgets", Name: "item1"}}, locations)
 
 	// update the remaining item
@@ -116,25 +105,21 @@ func TestExpectedBehavior(t *testing.T) {
 	require.NoError(err)
 
 	// verify the overwrite
-	item, found, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}})
+	item, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}})
 	require.NoError(err)
-	require.True(found)
 	require.Equal("item1updated", string(item.Data))
 
-	// delete the first item and all of its versions
-	found, err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item1"}})
+	// delete the first item and all of its variants
+	err = store.Delete(Ident{Location: Location{Category: "widgets", Name: "item1"}})
 	require.NoError(err)
-	require.True(found)
 
 	// verify that it was deleted
-	item, found, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}})
-	require.NoError(err)
-	require.False(found)
+	item, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}})
+	require.EqualValues(err, ErrNotFound)
 
 	// verify that its version was also deleted
-	item, found, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"})
-	require.NoError(err)
-	require.False(found)
+	item, err = store.Get(Ident{Location: Location{Category: "widgets", Name: "item1"}, Variant: "v2"})
+	require.EqualValues(err, ErrNotFound)
 }
 
 func TestVersionParentNodeDataIsNotSetIfItAlreadyExists(t *testing.T) {
@@ -263,7 +248,7 @@ func TestVersion(t *testing.T) {
 	// we should get a conflict if we try to delete version 1
 	item = newItem()
 	item.Ident.Version = NewVersion(1)
-	_, err = store.Delete(item.Ident)
+	err = store.Delete(item.Ident)
 	require.EqualValues(ErrVersionConflict, err)
 }
 
@@ -330,9 +315,8 @@ func TestListLocations(t *testing.T) {
 	})
 	require.NoError(err)
 
-	locations, found, err := store.List("/widgets/2017")
+	locations, err := store.List("/widgets/2017")
 	require.NoError(err)
-	require.True(found)
 	require.EqualValues([]Location{
 		{Name: "bar", Category: "/widgets/2017"},
 		{Name: "foo", Category: "/widgets/2017"},
@@ -356,14 +340,13 @@ func TestBucketDistribution(t *testing.T) {
 		require := require.New(t)
 		numBuckets := 1024
 		numNames := 1024 * 1024
-		s, err := NewStore(noConn(), OptNumHashBuckets(numBuckets), OptHashProviderFunc(test.hashProviderFunc))
-		require.NoError(err)
+		bf := bucketFunc(numBuckets, test.hashProviderFunc)
 		hits := make(map[int]int)
 		for i := 0; i < numBuckets; i++ {
 			hits[i] = 0
 		}
 		for i := 0; i < numNames; i++ {
-			b, err := s.bucketFor(fmt.Sprintf("name-%d", i))
+			b, err := bf(fmt.Sprintf("name-%d", i))
 			require.NoError(err)
 			if b < 0 {
 				t.Fatalf("hashFunc=%v got negative bucket value", test.name)
@@ -381,12 +364,11 @@ func TestBucketDistribution(t *testing.T) {
 func TestHashProducesSameValues(t *testing.T) {
 	require := require.New(t)
 	for i := 0; i < 1024; i++ {
-		s, err := NewStore(noConn(), OptNumHashBuckets(64))
-		require.NoError(err)
+		bf := bucketFunc(64, DefaultHashProviderFunc)
 		name := fmt.Sprintf("name-%d", i)
-		b1, err := s.bucketFor(name)
+		b1, err := bf(name)
 		require.NoError(err)
-		b2, err := s.bucketFor(name)
+		b2, err := bf(name)
 		require.NoError(err)
 		require.Equal(b1, b2)
 	}
@@ -395,32 +377,33 @@ func TestHashProducesSameValues(t *testing.T) {
 // TestIdentPath ensures that our path generation routines are working as
 // expected.
 func TestIdentPath(t *testing.T) {
+	isBadCategoryName := func(err error) bool { return err == errBadCategory }
 	type testCase struct {
-		ident    Ident
-		basePath string
-		path     string
-		errMsg   string
+		ident      Ident
+		basePath   string
+		path       string
+		wantsError func(error) bool
 	}
 	for _, test := range []testCase{
 		{
-			ident:  Ident{Location: Location{Name: "my-name", Category: "buckets"}},
-			errMsg: "category may not end with the buckets znode name",
+			ident:      Ident{Location: Location{Name: "my-name", Category: "buckets"}},
+			wantsError: isBadCategoryName,
 		},
 		{
-			ident:  Ident{Location: Location{Name: "my-name", Category: "/buckets"}},
-			errMsg: "category may not end with the buckets znode name",
+			ident:      Ident{Location: Location{Name: "my-name", Category: "/buckets"}},
+			wantsError: isBadCategoryName,
 		},
 		{
-			ident:  Ident{Location: Location{Name: "my-name", Category: "/buckets/"}},
-			errMsg: "category may not end with the buckets znode name",
+			ident:      Ident{Location: Location{Name: "my-name", Category: "/buckets/"}},
+			wantsError: isBadCategoryName,
 		},
 		{
-			ident:  Ident{Location: Location{Name: "my-name", Category: "foo/buckets"}},
-			errMsg: "category may not end with the buckets znode name",
+			ident:      Ident{Location: Location{Name: "my-name", Category: "foo/buckets"}},
+			wantsError: isBadCategoryName,
 		},
 		{
-			ident:  Ident{Location: Location{Name: "my-name", Category: "/foo/buckets/"}},
-			errMsg: "category may not end with the buckets znode name",
+			ident:      Ident{Location: Location{Name: "my-name", Category: "/foo/buckets/"}},
+			wantsError: isBadCategoryName,
 		},
 		{
 			ident: Ident{Location: Location{Name: "my-name", Category: "widgets"}},
@@ -451,8 +434,18 @@ func TestIdentPath(t *testing.T) {
 			t.Fatalf("%#v produced err:%v", test, err)
 		}
 		identPath, err := store.identPath(test.ident)
-		if identPath != test.path || errMsg(err) != test.errMsg {
-			t.Fatalf("%#v produced path:%v err:%v", test, identPath, err)
+		if (test.wantsError != nil) != (err != nil) {
+			if err != nil {
+				t.Fatalf("unexpected error for test case %#v: %v", test, err)
+			} else {
+				t.Fatalf("expected error for test case %#v", test)
+			}
+		}
+		if test.wantsError != nil && !test.wantsError(err) {
+			t.Fatalf("expected error other than %v for test case %#v", err, test)
+		}
+		if identPath != test.path {
+			t.Fatalf("%#v produced path:%v", test, identPath)
 		}
 	}
 }
@@ -493,10 +486,5 @@ func noConn() Connector {
 // fixedBucketFunc configures a store to always use a single bucket number. This
 // is used to make verification easy in tests.
 func fixedBucketFunc(bucket int) StoreOpt {
-	return func(store *Store) error {
-		store.bucketFunc = func(name string) (int, error) {
-			return bucket, nil
-		}
-		return nil
-	}
+	return optBucketFunc(func(_ string) (int, error) { return bucket, nil })
 }

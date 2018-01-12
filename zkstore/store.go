@@ -16,9 +16,9 @@ type Store struct {
 	basePath         string                    // the base path to use for any znodes
 	bucketsZnodeName string                    // the name of the znode folder
 	acls             []zk.ACL                  // the ACLs to use for any created nodes
-	hashBuckets      int                       // the number of hash buckets
 	bucketFunc       func(string) (int, error) // converts a name into a bucket number
-	hashProviderFunc HashProviderFunc          // converts a name into a hash
+	hashProviderFunc HashProviderFunc          // configures bucketFunc
+	hashBuckets      int                       // configures bucketFunc
 	closeFunc        func() error              // closes zk resources
 }
 
@@ -54,8 +54,10 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 		conn:             conn,
 		closeFunc:        connector.Close,
 		bucketsZnodeName: DefaultBucketsZnodeName,
-		hashBuckets:      DefaultNumHashBuckets,
 		acls:             DefaultZKACL,
+		bucketFunc:       bucketFunc(DefaultNumHashBuckets, DefaultHashProviderFunc),
+		// MUST match what's passed to bucketFunc() above
+		hashBuckets:      DefaultNumHashBuckets,
 		hashProviderFunc: DefaultHashProviderFunc,
 	}
 	for _, opt := range opts {
@@ -70,9 +72,13 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 // that reflects the updated metadata for that item (specifically, the
 // Version)
 //
-// If a client attempts to set an Item with a Version, and the current
-// item (with no Version) does not exist yet, the current item will be
+// If a client attempts to set an Item with a Variant, and the current
+// item (with no Variant) does not exist yet, the current item will be
 // created as well, with the same data as the specified Item.
+//
+// Returns ErrConflict if there is a Version mismatch between the item given
+// and the version of the data currently stored. This check is not performed
+// if there is no Version set for the given item.
 func (s *Store) Put(item Item) (Ident, error) {
 	err := func() error {
 		if err := item.Validate(); err != nil {
@@ -150,7 +156,8 @@ func (s *Store) setFully(item Item) (stat *zk.Stat, err error) {
 
 // Get fetches the data for a particuar item. If a particluar version is
 // desired, it must be set on the ident.
-func (s *Store) Get(ident Ident) (item Item, found bool, err error) {
+// Returns ErrNotFound if no such item exists.
+func (s *Store) Get(ident Ident) (item Item, err error) {
 	err = func() error {
 		if err := ident.Validate(); err != nil {
 			return err
@@ -162,24 +169,21 @@ func (s *Store) Get(ident Ident) (item Item, found bool, err error) {
 		data, stat, err := s.conn.Get(identPath)
 		switch {
 		case err == zk.ErrNoNode:
-			// leave found set to false and return
-			return nil
+			return ErrNotFound
 		case err != nil:
 			return err
 		}
 		item.Ident = ident
 		item.Data = data
 		item.Ident.Version = NewVersion(stat.Version)
-		found = true
 		return nil
 	}()
 	return
 }
 
-// Versions fetches all of the versions for a particular item.
-//
-// If the item does not exist, found will be false, otherwise true.
-func (s *Store) Versions(location Location) (versions []string, found bool, err error) {
+// Variants fetches all of the variants for a particular item.
+// Returns ErrNotFound if no item exists at the given location.
+func (s *Store) Variants(location Location) (variants []string, err error) {
 	err = func() error {
 		if err := location.Validate(); err != nil {
 			return err
@@ -190,25 +194,23 @@ func (s *Store) Versions(location Location) (versions []string, found bool, err 
 		if err != nil {
 			return err
 		}
-		versions, _, err = s.conn.Children(identPath)
+		variants, _, err = s.conn.Children(identPath)
 		switch {
 		case err == zk.ErrNoNode:
-			// leave found set to false and return
-			return nil
+			return ErrNotFound
 		case err != nil:
 			return err
 		}
-		found = true
 		return nil
 	}()
 	return
 }
 
-// Delete deletes the identified item.  If successful, true will be returned.
-// If the item does not exist, false will be returned.
-func (s *Store) Delete(ident Ident) (found bool, err error) {
+// Delete deletes the identified item.
+// An error is NOT returned in the case where the item does not already exist in the store.
+func (s *Store) Delete(ident Ident) (err error) {
 	if err = ident.Validate(); err != nil {
-		return false, err
+		return
 	}
 	if ident.Variant != "" {
 		return s.deleteVariant(ident)
@@ -217,70 +219,62 @@ func (s *Store) Delete(ident Ident) (found bool, err error) {
 }
 
 // deleteItem deletes the item and all versions within it
-func (s *Store) deleteItem(ident Ident) (found bool, err error) {
-	err = func() error {
-		var variants []string
-		variants, found, err = s.Versions(ident.Location)
-		switch {
-		case err != nil:
-			return err
-		case !found:
-			// the item could not be found. leave found=false and return
-			return nil
+func (s *Store) deleteItem(ident Ident) (err error) {
+	var variants []string
+	variants, err = s.Variants(ident.Location)
+	switch {
+	case err == ErrNotFound:
+		return nil
+	case err != nil:
+		return
+	}
+	// delete each variant of the specified item
+	for _, v := range variants {
+		variant := ident
+		variant.Variant = v
+		variant.Version = Version{} // force delete it no matter the zk version
+		if err = s.deleteVariant(variant); err != nil {
+			return
 		}
-		// delete each variant of the specified item
-		for _, v := range variants {
-			variant := ident
-			variant.Variant = v
-			variant.Version = Version{} // force delete it no matter the zk version
-			if _, err = s.deleteVariant(variant); err != nil {
-				return err
-			}
-		}
-		// and then delete the actual parent node
-		identPath, err := s.identPath(ident)
-		if err != nil {
-			return err
-		}
-		err = s.conn.Delete(identPath, ident.actualVersion())
-		switch err {
-		case zk.ErrNoNode:
-			return nil
-		case zk.ErrBadVersion:
-			return ErrVersionConflict
-		}
-		return err
-	}()
+	}
+	// and then delete the actual parent node
+	identPath, err := s.identPath(ident)
+	if err != nil {
+		return
+	}
+	err = s.conn.Delete(identPath, ident.actualVersion())
+	switch err {
+	case zk.ErrNoNode:
+		return nil
+	case zk.ErrBadVersion:
+		return ErrVersionConflict
+	}
 	return
 }
 
 // deleteVariant deletes only an item variant
-func (s *Store) deleteVariant(ident Ident) (found bool, err error) {
-	err = func() error {
-		identPath, err := s.identPath(ident)
-		if err != nil {
-			return err
-		}
-		err = s.conn.Delete(identPath, ident.actualVersion())
-		switch err {
-		case zk.ErrNoNode:
-			// perhaps someone already deleted it? leave found==false
-			return nil
-		case zk.ErrBadVersion:
-			return ErrVersionConflict
-		}
-		found = true
+func (s *Store) deleteVariant(ident Ident) (err error) {
+	identPath, err := s.identPath(ident)
+	if err != nil {
 		return err
-	}()
-	return
+	}
+	err = s.conn.Delete(identPath, ident.actualVersion())
+	switch err {
+	case zk.ErrNoNode:
+		// perhaps someone already deleted it?
+		return nil
+	case zk.ErrBadVersion:
+		return ErrVersionConflict
+	}
+	return err
 }
 
 // List lists all of the known, latest version Locations that exist under
 // the specified category.
-// If the category could not be found, found will be set to false.
-func (s *Store) List(category string) (locations []Location, found bool, err error) {
+// Returns ErrNotFound if the category cannot be found within the store.
+func (s *Store) List(category string) (locations []Location, err error) {
 	err = func() error {
-		if err = validateCategory(category); err != nil {
+		if err := validateCategory(category); err != nil {
 			return errors.Wrap(err, "invalid category")
 		}
 		bucketsPath, err := s.bucketsPath(category)
@@ -290,7 +284,7 @@ func (s *Store) List(category string) (locations []Location, found bool, err err
 		buckets, _, err := s.conn.Children(bucketsPath)
 		switch {
 		case err == zk.ErrNoNode:
-			return nil
+			return ErrNotFound
 		case err != nil:
 			return err
 		}
@@ -298,7 +292,6 @@ func (s *Store) List(category string) (locations []Location, found bool, err err
 			return nil
 		}
 		locations = make([]Location, 0, len(buckets))
-		found = true
 		for _, bucket := range buckets {
 			children, _, err := s.conn.Children(path.Join(bucketsPath, bucket))
 			switch {
@@ -355,7 +348,7 @@ func (s *Store) mustExist(path string) (stat *zk.Stat, err error) {
 
 // identPath returns the full path of the item pointed to by the Ident
 func (s *Store) identPath(ident Ident) (string, error) {
-	bucket, err := s.bucketFor(ident.Location.Name)
+	bucket, err := s.bucketFunc(ident.Location.Name)
 	if err != nil {
 		return "", err
 	}
@@ -377,7 +370,7 @@ func (s *Store) identPath(ident Ident) (string, error) {
 func (s *Store) bucketsPath(category string) (string, error) {
 	leaf := path.Base(path.Clean(category))
 	if leaf == s.bucketsZnodeName {
-		return "", errors.New("category may not end with the buckets znode name")
+		return "", errBadCategory
 	}
 	return path.Join(
 		"/",
@@ -387,14 +380,12 @@ func (s *Store) bucketsPath(category string) (string, error) {
 	), nil
 }
 
-// bucketFor returns the bucket number for a particular name
-func (s *Store) bucketFor(name string) (int, error) {
-	if s.bucketFunc != nil {
-		return s.bucketFunc(name)
+func bucketFunc(bucketCount int, f HashProviderFunc) func(string) (int, error) {
+	return func(name string) (int, error) {
+		hash, err := f(name)
+		if err != nil {
+			return 0, err
+		}
+		return hashBytesToBucket(bucketCount, hash), nil
 	}
-	hash, err := s.hashProviderFunc(name)
-	if err != nil {
-		return 0, err
-	}
-	return hashBytesToBucket(s.hashBuckets, hash), nil
 }

@@ -6,10 +6,10 @@ package zkstore
 // interface if they wish.
 type IStore interface {
 	Put(item Item) (Ident, error)
-	Get(ident Ident) (item Item, found bool, err error)
-	List(category string) (locations []Location, found bool, err error)
-	Versions(location Location) (versions []string, found bool, err error)
-	Delete(ident Ident) (found bool, err error)
+	Get(ident Ident) (item Item, err error)
+	List(category string) (locations []Location, err error)
+	Variants(location Location) (variants []string, err error)
+	Delete(ident Ident) error
 	Close() error
 }
 

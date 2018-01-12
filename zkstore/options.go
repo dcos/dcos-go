@@ -56,7 +56,8 @@ func OptNumHashBuckets(numBuckets int) StoreOpt {
 	}
 	return func(store *Store) error {
 		store.hashBuckets = numBuckets
-		return nil
+		return optBucketFunc(bucketFunc(numBuckets, store.hashProviderFunc)).Apply(store)
+
 	}
 }
 
@@ -81,7 +82,7 @@ func OptHashProviderFunc(hashProviderFunc HashProviderFunc) StoreOpt {
 	}
 	return func(store *Store) error {
 		store.hashProviderFunc = hashProviderFunc
-		return nil
+		return optBucketFunc(bucketFunc(store.hashBuckets, hashProviderFunc)).Apply(store)
 	}
 }
 
@@ -94,6 +95,16 @@ func OptBucketsZnodeName(name string) StoreOpt {
 	}
 	return func(store *Store) error {
 		store.bucketsZnodeName = name
+		return nil
+	}
+}
+
+func optBucketFunc(f func(string) (int, error)) StoreOpt {
+	if f == nil {
+		return nil
+	}
+	return func(store *Store) error {
+		store.bucketFunc = f
 		return nil
 	}
 }
