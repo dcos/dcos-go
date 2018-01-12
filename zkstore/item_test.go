@@ -16,7 +16,7 @@ func TestItemValidate(t *testing.T) {
 		},
 		{
 			item:   Item{Ident: Ident{Location: Location{Name: "foo"}}},
-			errMsg: "invalid location: invalid category: cannot be blank",
+			errMsg: "invalid location: invalid category: " + errBadCategory.Error(),
 		},
 		{
 			item: Item{Ident: Ident{Location: Location{Name: "foo", Category: "widgets"}}},

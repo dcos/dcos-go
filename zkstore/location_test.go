@@ -20,11 +20,15 @@ func TestLocationValidate(t *testing.T) {
 		},
 		{
 			location: Location{Name: "foo"},
-			errMsg:   "invalid category: cannot be blank",
+			errMsg:   "invalid category: " + errBadCategory.Error(),
 		},
 		{
 			location: Location{Name: "foo", Category: "invalid category"},
 			errMsg:   "invalid category: must match " + validCategoryRE.String(),
+		},
+		{
+			location: Location{Name: "foo", Category: "invalid//category"},
+			errMsg:   "invalid category: " + errBadCategory.Error(),
 		},
 		{
 			location: Location{Name: "foo", Category: "/my-category"},

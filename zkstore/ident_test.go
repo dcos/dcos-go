@@ -18,7 +18,7 @@ func TestIdentValidate(t *testing.T) {
 		},
 		{
 			ident:  Ident{Location: Location{Name: "foo"}},
-			errMsg: "invalid location: invalid category: cannot be blank",
+			errMsg: "invalid location: invalid category: " + errBadCategory.Error(),
 		},
 		{
 			ident:  Ident{Location: Location{Name: "foo/bar"}},

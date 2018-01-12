@@ -2,6 +2,7 @@ package zkstore
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	validNameRE     = regexp.MustCompile(`^[\w\d_-]*$`)
+	validNameRE     = regexp.MustCompile(`^[\w\d_-]+$`)
 	validCategoryRE = regexp.MustCompile(`^[/\w\d_-]+$`)
 )
 
@@ -21,8 +22,11 @@ func validateNamed(name string, required bool) error {
 	if strings.TrimSpace(name) != name {
 		return errors.New("leader or trailing spaces not allowed")
 	}
-	if required && name == "" {
-		return errors.New("cannot be blank")
+	if name == "" {
+		if required {
+			return errors.New("cannot be blank")
+		}
+		return nil
 	}
 	if !validNameRE.MatchString(name) {
 		return fmt.Errorf("must match %s", validNameRE)
@@ -33,10 +37,14 @@ func validateNamed(name string, required bool) error {
 // a category is required, and can look like a path or not
 func validateCategory(name string) error {
 	if strings.TrimSpace(name) == "" {
-		return errors.New("cannot be blank")
+		return errBadCategory
 	}
 	if !validCategoryRE.MatchString(name) {
 		return fmt.Errorf("must match %s", validCategoryRE)
+	}
+	cleaned := path.Clean(name)
+	if cleaned != name {
+		return errBadCategory
 	}
 	return nil
 }
