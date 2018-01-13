@@ -90,7 +90,7 @@ func OptHashProviderFunc(hashProviderFunc HashProviderFunc) StoreOpt {
 // contain the numerically-named bucket nodes.
 // Returns ErrIllegalOption when the specifeid znode name is invalid.
 func OptBucketsZnodeName(name string) StoreOpt {
-	if err := validateNamed(name, true); err != nil {
+	if err := ValidateNamed(name, true); err != nil {
 		return optError
 	}
 	return func(store *Store) error {

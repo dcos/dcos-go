@@ -274,7 +274,7 @@ func (s *Store) deleteVariant(ident Ident) (err error) {
 // Returns ErrNotFound if the category cannot be found within the store.
 func (s *Store) List(category string) (locations []Location, err error) {
 	err = func() error {
-		if err := validateCategory(category); err != nil {
+		if err := ValidateCategory(category); err != nil {
 			return errors.Wrap(err, "invalid category")
 		}
 		bucketsPath, err := s.bucketsPath(category)

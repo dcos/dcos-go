@@ -23,10 +23,10 @@ func (l Location) String() string {
 
 // Validate performs validation on the Location
 func (l Location) Validate() error {
-	if err := validateNamed(l.Name, true); err != nil {
+	if err := ValidateNamed(l.Name, true); err != nil {
 		return errors.Wrap(err, "invalid name")
 	}
-	if err := validateCategory(l.Category); err != nil {
+	if err := ValidateCategory(l.Category); err != nil {
 		return errors.Wrap(err, "invalid category")
 	}
 	return nil

@@ -44,7 +44,7 @@ func (i Ident) Validate() error {
 	if err := i.Location.Validate(); err != nil {
 		return errors.Wrap(err, "invalid location")
 	}
-	if err := validateNamed(i.Variant, false); err != nil {
+	if err := ValidateNamed(i.Variant, false); err != nil {
 		return errors.Wrap(err, "invalid variant")
 	}
 	return nil
