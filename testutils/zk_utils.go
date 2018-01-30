@@ -3,10 +3,12 @@ package testutils
 import (
 	"fmt"
 	"net"
+	"runtime"
 	"time"
 
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
+	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
@@ -23,6 +25,18 @@ func StartZookeeper() (*ZkControl, error) {
 		return nil, err
 	}
 
+	// the container IP is not routable on Darwin, thus needs port
+	// mapping for the container.
+	hostConfig := &container.HostConfig{}
+	if runtime.GOOS == "darwin" {
+		hostConfig.PortBindings = nat.PortMap{
+			"2181/tcp": []nat.PortBinding{{
+				HostIP:   "0.0.0.0",
+				HostPort: "2181",
+			}},
+		}
+	}
+
 	r, err := dcli.ContainerCreate(
 		context.Background(),
 		&container.Config{
@@ -30,7 +44,7 @@ func StartZookeeper() (*ZkControl, error) {
 			Entrypoint: []string{"/opt/zookeeper/bin/zkServer.sh"},
 			Cmd:        []string{"start-foreground"},
 		},
-		&container.HostConfig{},
+		hostConfig,
 		nil, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create zk container")
@@ -53,7 +67,13 @@ func StartZookeeper() (*ZkControl, error) {
 		cleanup()
 		return nil, errors.Wrap(err, "could not inspect container")
 	}
-	addr := info.NetworkSettings.IPAddress + ":2181"
+
+	var addr string
+	if runtime.GOOS == "darwin" {
+		addr = "127.0.0.1:2181"
+	} else {
+		addr = info.NetworkSettings.IPAddress + ":2181"
+	}
 
 	done := make(chan struct{})
 	defer close(done)
