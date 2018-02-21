@@ -276,21 +276,21 @@ func TestVersionSetOnCreate(t *testing.T) {
 	ident, err := store.Put(item)
 	require.Equal(ErrVersionConflict, err)
 
-	// this should succeed because the item does not exist yet and version == -1
+	// this should succeed because the item does not exist yet and version == NoPriorVersion
 	item = newItem()
-	item.Ident.Version = NewVersion(-1)
+	item.Ident.Version = NewVersion(NoPriorVersion)
 	ident, err = store.Put(item)
 	require.NoError(err)
 	require.EqualValues(0, ident.actualVersion())
 
-	// this should fail because the item was already created with version == -1.
+	// this should fail because the item was already created.
 	item = newItem()
-	item.Ident.Version = NewVersion(-1)
+	item.Ident.Version = NewVersion(NoPriorVersion)
 	ident, err = store.Put(item)
 	require.Equal(ErrVersionConflict, err)
 
-	// this should succeed because the item already exists and was created
-	// with version==-1 which means currently its version==0.
+	// this should succeed because the item already exists and has not been
+	// subsequently updated which means currently its version==0.
 	item = newItem()
 	item.Ident.Version = NewVersion(0)
 	ident, err = store.Put(item)

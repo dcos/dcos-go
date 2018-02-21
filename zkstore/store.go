@@ -76,7 +76,7 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 // item (with no Variant) does not exist yet, the current item will be
 // created as well, with the same data as the specified Item.
 //
-// Returns ErrConflict if there is a Version mismatch between the item given
+// Returns ErrVersionConflict if there is a Version mismatch between the item given
 // and the version of the data currently stored. This check is not performed
 // if there is no Version set for the given item.
 func (s *Store) Put(item Item) (Ident, error) {
@@ -132,13 +132,17 @@ func (s *Store) Put(item Item) (Ident, error) {
 	return item.Ident, err
 }
 
+// NoPriorVersion tells Put that we're expecting to create a new znode for a particular item,
+// not to update an existing item. If znode already exists, then ErrVersionConflict may be returned.
+const NoPriorVersion = -1
+
 // creatingNewItem returns whether or not the Item version dictates that this
 // item should be created and an error should be returned if it already exists
 // in ZK. It returns true if and only if the Version is explicitly set to -1
 // when passed to Put().
 func creatingNewItem(item Item) bool {
 	v, isSet := item.Ident.Version.Value()
-	return isSet && v == -1
+	return isSet && v == NoPriorVersion
 }
 
 // setFully sets data for a path, creating any parents nodes as necessary.
