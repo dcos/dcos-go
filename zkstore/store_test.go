@@ -252,6 +252,84 @@ func TestVersion(t *testing.T) {
 	require.EqualValues(ErrVersionConflict, err)
 }
 
+func TestVersionSetOnCreate(t *testing.T) {
+	store, _, teardown := newStoreTest(t, fixedBucketFunc(42), OptBasePath("/storage"))
+	defer teardown()
+	require := require.New(t)
+
+	newItem := func() Item {
+		return Item{
+			Ident: Ident{
+				Location: Location{
+					Category: "/widgets/awesome/two",
+					Name:     "foo",
+				},
+				Variant: "my-version",
+			},
+			Data: []byte("hello"),
+		}
+	}
+
+	// this should fail because the item does not exist yet and version > 0
+	item := newItem()
+	item.Ident.Version = NewVersion(42) // invalid
+	ident, err := store.Put(item)
+	require.Equal(ErrVersionConflict, err)
+
+	// this should succeed because the item does not exist yet and version == -1
+	item = newItem()
+	item.Ident.Version = NewVersion(-1)
+	ident, err = store.Put(item)
+	require.NoError(err)
+	require.EqualValues(0, ident.actualVersion())
+
+	// this should fail because the item was already created with version == -1.
+	item = newItem()
+	item.Ident.Version = NewVersion(-1)
+	ident, err = store.Put(item)
+	require.Equal(ErrVersionConflict, err)
+
+	// this should succeed because the item already exists and was created
+	// with version==-1 which means currently its version==0.
+	item = newItem()
+	item.Ident.Version = NewVersion(0)
+	ident, err = store.Put(item)
+	require.NoError(err)
+	require.EqualValues(1, ident.actualVersion())
+
+	// this should fail because the item has since been updated from version==0 to version==1
+	item = newItem()
+	item.Ident.Version = NewVersion(0)
+	ident, err = store.Put(item)
+	require.Equal(ErrVersionConflict, err)
+
+	// put the same item again, verify its version==2
+	item = newItem()
+	ident, err = store.Put(item)
+	require.NoError(err)
+	require.EqualValues(2, ident.actualVersion())
+
+	// put the same item, but set it to use zkversion=2
+	item = newItem()
+	item.Ident.Version = NewVersion(2)
+	ident, err = store.Put(item)
+	require.NoError(err)
+	require.EqualValues(3, ident.actualVersion())
+
+	// put the same item, but fail when trying to set a previous version
+	item = newItem()
+	item.Ident.Version = NewVersion(2)
+	ident, err = store.Put(item)
+	require.EqualValues(ErrVersionConflict, err)
+
+	// at this point, our stored item is still at version 3
+	// we should get a conflict if we try to delete version 2
+	item = newItem()
+	item.Ident.Version = NewVersion(2)
+	err = store.Delete(item.Ident)
+	require.EqualValues(ErrVersionConflict, err)
+}
+
 func TestVersionIsIncrementedOnPut(t *testing.T) {
 	store, _, teardown := newStoreTest(t, fixedBucketFunc(42), OptBasePath("/storage"))
 	defer teardown()

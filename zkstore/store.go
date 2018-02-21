@@ -88,7 +88,30 @@ func (s *Store) Put(item Item) (Ident, error) {
 		if err != nil {
 			return err
 		}
-		// shortcut: try to set it if it already exists
+		if creatingNewItem(item) {
+			// As such, we return an error if the item already
+			// exists and create it (and return an identifier where
+			// Version==0) if not.
+			exists, _, err := s.conn.Exists(identPath)
+			if err != nil {
+				return err
+			}
+			if exists {
+				return ErrVersionConflict
+			}
+			// The node does not exist yet, so we create it.
+			stat, err := s.setFully(item)
+			if err != nil {
+				return err
+			}
+			item.Ident.Version = NewVersion(stat.Version)
+			return nil
+		}
+		// We aren't explicitly creating a new item (although we may
+		// end up doing so if it doesn't already exist.) We try and set
+		// the item in the database in case it already exists. If it
+		// doesn't exist yet we respond to the zk.ErrNoNode error by
+		// creating it along with its ancestors.
 		stat, err := s.conn.Set(identPath, item.Data, item.Ident.actualVersion())
 		switch {
 		case err == zk.ErrNoNode:
@@ -107,6 +130,15 @@ func (s *Store) Put(item Item) (Ident, error) {
 		return nil
 	}()
 	return item.Ident, err
+}
+
+// creatingNewItem returns whether or not the Item version dictates that this
+// item should be created and an error should be returned if it already exists
+// in ZK. It returns true if and only if the Version is explicitly set to -1
+// when passed to Put().
+func creatingNewItem(item Item) bool {
+	v, isSet := item.Ident.Version.Value()
+	return isSet && v == -1
 }
 
 // setFully sets data for a path, creating any parents nodes as necessary.
