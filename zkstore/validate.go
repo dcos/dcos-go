@@ -34,7 +34,7 @@ func ValidateNamed(name string, required bool) error {
 	return nil
 }
 
-// ValidateCategory: a category is required, and can look like a path or not.
+// ValidateCategory checks that a category is required, and can look like a path or not.
 func ValidateCategory(name string) error {
 	if strings.TrimSpace(name) == "" {
 		return errBadCategory
