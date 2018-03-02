@@ -46,3 +46,5 @@ Part of an item's Ident is a `Version` field called `Version`.
 When performing a Get, the Store will set the `Version` on the returned Item.  This allows the client to specify that version when performing a subsequent mutating operation.
 
 If this is set on an item's Ident property when performing a mutating operation, it will ensure that the item that is updated is specifically that version when setting it.  If another client happened to set the item before the first client was able to do so, the library will return the `ErrVersionConflict` error.  At this point, the client may choose to do another read and try again.
+
+If the `Item.Ident.Version` is set to `NoPriorVersion` when passing an Item to Put() it is assumed that this Put() must create the item and it will return ErrVersionConflict if the node already exists. If no Version is specified, Put will create the node if it doesn't already exist or ignore and overwrite the existing Item with the new one if it does.

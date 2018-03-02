@@ -76,7 +76,7 @@ func NewStore(connector Connector, opts ...StoreOpt) (*Store, error) {
 // item (with no Variant) does not exist yet, the current item will be
 // created as well, with the same data as the specified Item.
 //
-// Returns ErrConflict if there is a Version mismatch between the item given
+// Returns ErrVersionConflict if there is a Version mismatch between the item given
 // and the version of the data currently stored. This check is not performed
 // if there is no Version set for the given item.
 func (s *Store) Put(item Item) (Ident, error) {
@@ -88,7 +88,30 @@ func (s *Store) Put(item Item) (Ident, error) {
 		if err != nil {
 			return err
 		}
-		// shortcut: try to set it if it already exists
+		if creatingNewItem(item) {
+			// As such, we return an error if the item already
+			// exists and create it (and return an identifier where
+			// Version==0) if not.
+			exists, _, err := s.conn.Exists(identPath)
+			if err != nil {
+				return err
+			}
+			if exists {
+				return ErrVersionConflict
+			}
+			// The node does not exist yet, so we create it.
+			stat, err := s.setFully(item)
+			if err != nil {
+				return err
+			}
+			item.Ident.Version = NewVersion(stat.Version)
+			return nil
+		}
+		// We aren't explicitly creating a new item (although we may
+		// end up doing so if it doesn't already exist.) We try and set
+		// the item in the database in case it already exists. If it
+		// doesn't exist yet we respond to the zk.ErrNoNode error by
+		// creating it along with its ancestors.
 		stat, err := s.conn.Set(identPath, item.Data, item.Ident.actualVersion())
 		switch {
 		case err == zk.ErrNoNode:
@@ -107,6 +130,19 @@ func (s *Store) Put(item Item) (Ident, error) {
 		return nil
 	}()
 	return item.Ident, err
+}
+
+// NoPriorVersion tells Put that we're expecting to create a new znode for a particular item,
+// not to update an existing item. If znode already exists, then ErrVersionConflict may be returned.
+const NoPriorVersion = -1
+
+// creatingNewItem returns whether or not the Item version dictates that this
+// item should be created and an error should be returned if it already exists
+// in ZK. It returns true if and only if the Version is explicitly set to -1
+// when passed to Put().
+func creatingNewItem(item Item) bool {
+	v, isSet := item.Ident.Version.Value()
+	return isSet && v == NoPriorVersion
 }
 
 // setFully sets data for a path, creating any parents nodes as necessary.
