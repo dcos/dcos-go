@@ -1,0 +1,6 @@
+Quick Start
+===========
+git clone git@github.com:mesosphere/dcos-metrics-collectors.git
+cd dcos-metrics-collectors
+make
+./build/<your-os>/dcos-metrics-collectors --statsd-server=127.0.0.1:8124
