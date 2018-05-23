@@ -107,12 +107,30 @@
   version = "v1.0.4"
 
 [[projects]]
+  name = "github.com/smira/go-statsd"
+  packages = ["."]
+  revision = "f00e0db915c6dfccf317d3bdb7dff25fe7b46284"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/smira/go-statsd.git"
+  packages = ["."]
+  revision = "f00e0db915c6dfccf317d3bdb7dff25fe7b46284"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "require"
   ]
   revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
+
+[[projects]]
+  name = "github.com/uber-go/tally"
+  packages = ["."]
+  revision = "79f2a33b0e55b1255ffbbaf824dcafb09ff34dda"
+  version = "v3.3.6"
 
 [[projects]]
   name = "golang.org/x/crypto"
@@ -154,6 +172,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "35b1a5cc21c4d0ccdc64e2f924aa70ebabf325285929262ef9572e42bb76983d"
+  inputs-digest = "cfa05519454e5cb66e001996a79186a02e1edc49019506595cf4f5a72433a8c4"
   solver-name = "gps-cdcl"
   solver-version = 1

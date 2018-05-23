@@ -31,3 +31,7 @@
 [[constraint]]
   name = "gopkg.in/square/go-jose.v2"
   version = "2.1.3"
+
+[[constraint]]
+  name = "github.com/smira/go-statsd"
+  version = "1.1.0"
