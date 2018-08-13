@@ -1,12 +1,14 @@
 package elector
 
 import (
+	"fmt"
 	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/dcos/dcos-go/testutils"
+	"github.com/fortytw2/leaktest"
 	"github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/stretchr/testify/require"
@@ -234,4 +236,106 @@ func TestStart_NoDeadlock(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for Start() to complete")
 	}
+}
+
+type eventsCloser struct {
+	Connector
+	writeLock *sync.Mutex
+	events    chan zk.Event
+}
+
+func (e *eventsCloser) Close() error {
+	func() {
+		e.writeLock.Lock()
+		defer e.writeLock.Unlock()
+		close(e.events)
+	}()
+	return e.Connector.Close()
+}
+
+func TestClose_NoGoroutineLeak(t *testing.T) {
+	// See notes in the subtest func about the need to run
+	// multiple times to guard against flakes.
+	for i := 0; i < 100 && !t.Failed(); i++ {
+		testCloseNoGoroutineLeak(t)
+	}
+}
+
+func testCloseNoGoroutineLeak(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	events := make(chan zk.Event)
+	childevents := make(chan zk.Event)
+	writeLock := new(sync.Mutex) // guard against concurrent chan send and close ops
+	childrenWFCount := 0
+	conn := ConnAdapter{
+		ExistsF: func(p string) (bool, *zk.Stat, error) {
+			t.Logf("exists: %q", p)
+			// block until events is writable
+			writeLock.Lock()
+			defer writeLock.Unlock()
+			events <- zk.Event{State: zk.StateSaslAuthenticated}
+			return true, nil, nil
+		},
+		CreateProtectedEphemeralSequentialF: func(string, []byte, []zk.ACL) (string, error) {
+			writeLock.Lock()
+			defer writeLock.Unlock()
+			events <- zk.Event{State: zk.StateSaslAuthenticated}
+			return "whatever-lock-123", nil
+		},
+		ChildrenWF: func(string) ([]string, *zk.Stat, <-chan zk.Event, error) {
+			writeLock.Lock()
+			defer writeLock.Unlock()
+			if childrenWFCount > 0 {
+				return nil, nil, nil, fmt.Errorf("ZK closed")
+			}
+			childrenWFCount++
+			events <- zk.Event{State: zk.StateSaslAuthenticated}
+			return []string{"whatever-lock-123"}, nil, childevents, nil
+		},
+		GetF: func(s string) ([]byte, *zk.Stat, error) {
+			return ([]byte)("foo"), nil, nil
+		},
+	}
+	ctor := &eventsCloser{
+		Connector: ExistingConnection(conn, events),
+		writeLock: writeLock,
+		events:    events,
+	}
+	el, err := Start("id", "base", nil, ctor)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	ch := make(chan error, 1)
+	go func() {
+		defer close(ch)
+		select {
+		// initial leader event
+		case ev := <-el.Events():
+			if ev.Err != nil {
+				ch <- ev.Err
+			}
+		case <-time.After(5 * time.Second):
+			ch <- fmt.Errorf("timed out waiting for initial leader event")
+		}
+	}()
+
+	err = <-ch
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// No one is reading elector events anymore because the
+	// system is going down. Child events close to indicate that
+	// it is shutting down. The elector attempts to re-list the
+	// children and ZK generates an error.
+	// The result is that the goroutine will block forever while
+	// trying to send an error to the elector client that is no
+	// longer listening.
+	// The error handling code in the elector will race so this
+	// test should be run multiple times to verify that it's not
+	// going to flake in production.
+	close(childevents)
+	el.Close()
 }
