@@ -42,6 +42,7 @@ type Elector struct {
 	ident    string       // the ident of the elector
 	basePath string       // where the elector nodes will be created
 	closer   func() error // the connector shutdown func
+	closing  chan struct{}
 
 	mut         sync.Mutex // mut guards the following mutable state:
 	leaderIdent string     // the current leader's ident
@@ -75,13 +76,19 @@ func Start(ident string, basePath string, acl []zk.ACL, connector Connector) (*E
 	if err != nil {
 		return nil, err
 	}
+	closing := make(chan struct{})
+	var closingOnce sync.Once
 	elector := &Elector{
 		acl:      acl,
 		ident:    ident,
 		conn:     conn,
 		basePath: basePath,
 		events:   make(chan Event),
-		closer:   connector.Close,
+		closing:  closing,
+		closer: func() error {
+			closingOnce.Do(func() { close(closing) })
+			return connector.Close()
+		},
 	}
 	go elector.start(zkEvents)
 	return elector, nil
@@ -274,7 +281,16 @@ func (e *Elector) sendErr(err error) {
 
 // sendEvent sends the specified event on the events channel
 func (e *Elector) sendEvent(event Event) {
-	e.events <- event
+	select {
+	case e.events <- event:
+	case <-e.closing:
+		select {
+		case e.events <- event:
+		default:
+			// drop outgoing events if close was called and there is no
+			// longer a listener awaiting events.
+		}
+	}
 }
 
 // sorted children sequences converts the children to sequence parts, and
