@@ -85,6 +85,12 @@
   version = "v0.3.2"
 
 [[projects]]
+  name = "github.com/fortytw2/leaktest"
+  packages = ["."]
+  revision = "a5ef70473c97b71626b9abeda80ee92ba2a7de9e"
+  version = "v1.2.0"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "e881fd58d78e04cf6d0de1217f8707c8cc2249bc"
@@ -154,6 +160,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "35b1a5cc21c4d0ccdc64e2f924aa70ebabf325285929262ef9572e42bb76983d"
+  inputs-digest = "fcc47cf5e2751cc6ba66fd357dd0a585e85e48077b8e94568c7cf9b556383a85"
   solver-name = "gps-cdcl"
   solver-version = 1
