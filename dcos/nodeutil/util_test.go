@@ -1,16 +1,15 @@
 package nodeutil
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
-	"testing"
-
-	"context"
-	"io/ioutil"
 	"strings"
+	"testing"
 
 	"github.com/dcos/dcos-go/dcos"
 )
