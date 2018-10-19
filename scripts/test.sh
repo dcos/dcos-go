@@ -40,7 +40,7 @@ function _goimports {
 
 function _golint {
     logmsg "Running 'go lint' ..."
-    go get -u github.com/golang/lint/golint
+    go get -u golang.org/x/lint/golint
     for pkg in $PACKAGES; do
         golint -set_exit_status $pkg
     done
