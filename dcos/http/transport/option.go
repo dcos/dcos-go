@@ -29,6 +29,9 @@ var (
 	// ErrInvalidCredentials is the error returned by NewRoundTripper if user used empty string for a credentials.
 	ErrInvalidCredentials = errors.New("uid, secret and loginEndpoit cannot be empty")
 
+	// ErrInvalidUserAgent is the error returned by NewRoundTripper if user used empty string for a user agent.
+	ErrInvalidUserAgent = errors.New("userAgent cannot be empty")
+
 	// ErrInvalidExpireDuration is the error returned by NewRoundTripper if the token expire duration is negative or
 	// zero value.
 	ErrInvalidExpireDuration = errors.New("token expire duration must be positive non zero value")
@@ -105,6 +108,17 @@ func OptionCredentials(uid, secret, loginEndpoint string) OptionRoundtripperFunc
 		}
 
 		return ErrInvalidCredentials
+	}
+}
+
+// OptionUserAgent is an option to set userAgent
+func OptionUserAgent(userAgent string) OptionRoundtripperFunc {
+	return func(j *dcosRoundtripper) error {
+		if userAgent == "" {
+			return ErrInvalidUserAgent
+		}
+		j.userAgent = userAgent
+		return nil
 	}
 }
 

@@ -45,7 +45,8 @@ func bouncerToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(b))
 }
 
-// Test if we can generate token and add it to request headers.
+// Test if we 1. generate token and add it to request headers,
+// and 2. add a user agent to the request headers.
 func TestNewRoundTripper(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(bouncerToken))
 	defer ts.Close()
@@ -88,7 +89,9 @@ func TestNewRoundTripper(t *testing.T) {
 		},
 	}
 
-	jwtTransport, err := NewRoundTripper(fr, OptionReadIAMConfig("./fixtures/test_service_account.json"))
+	testUserAgent := "test-user-agent-123"
+	jwtTransport, err := NewRoundTripper(fr, OptionReadIAMConfig("./fixtures/test_service_account.json"),
+		OptionUserAgent(testUserAgent))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,6 +109,11 @@ func TestNewRoundTripper(t *testing.T) {
 		auth := r.Header.Get("Authorization")
 		if auth != "token="+signedToken {
 			t.Fatalf("Expect request header: `Authorization: token=%s`.Got: %s", signedToken, auth)
+		}
+		// expect User-Agent header
+		userAgent := r.Header.Get("User-Agent")
+		if userAgent != testUserAgent {
+			t.Fatalf("Expected request header: `User-Agent: %s`. Got: %s", testUserAgent, userAgent)
 		}
 	}))
 	defer ts2.Close()
@@ -178,6 +186,13 @@ func TestOptionCredentials(t *testing.T) {
 	_, err := NewRoundTripper(&http.Transport{}, OptionCredentials("", "", ""))
 	if err != ErrInvalidCredentials {
 		t.Fatalf("Expect: %s. Got %s", ErrInvalidCredentials, err)
+	}
+}
+
+func TestOptionUserAgent(t *testing.T) {
+	_, err := NewRoundTripper(&http.Transport{}, OptionUserAgent(""))
+	if err != ErrInvalidUserAgent {
+		t.Fatalf("Expect: %s. Got %s", ErrInvalidUserAgent, err)
 	}
 }
 

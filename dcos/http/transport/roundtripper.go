@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -50,6 +51,7 @@ type dcosRoundtripper struct {
 	token              string
 	expire             time.Duration
 	uid, loginEndpoint string
+	userAgent          string
 	secret             *rsa.PrivateKey
 	transport          http.RoundTripper
 }
@@ -172,6 +174,13 @@ func (t *dcosRoundtripper) CurrentToken() string {
 
 // RoundTrip is implementation of RoundTripper interface.
 func (t *dcosRoundtripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Set `User-Agent` header, defaulting to process name
+	userAgent := os.Args[0]
+	if t.userAgent != "" {
+		userAgent = t.userAgent
+	}
+	req.Header.Set("User-Agent", userAgent)
+
 	// helper function to update `Authorization` header.
 	addAuthToken := func() {
 		if token := t.CurrentToken(); token != "" {
@@ -203,6 +212,7 @@ func (t *dcosRoundtripper) RoundTrip(req *http.Request) (*http.Response, error) 
 			return nil, err
 		}
 	}
+
 	return resp, nil
 }
 
