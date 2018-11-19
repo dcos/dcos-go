@@ -110,7 +110,7 @@ func TestNewRoundTripper(t *testing.T) {
 		if auth != "token="+signedToken {
 			t.Fatalf("Expect request header: `Authorization: token=%s`.Got: %s", signedToken, auth)
 		}
-		// expect User-Agent header
+		// expect User-Agent header with configured value
 		userAgent := r.Header.Get("User-Agent")
 		if userAgent != testUserAgent {
 			t.Fatalf("Expected request header: `User-Agent: %s`. Got: %s", testUserAgent, userAgent)
@@ -123,6 +123,45 @@ func TestNewRoundTripper(t *testing.T) {
 	}
 
 	resp, err := c.Get(ts2.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	// Test default User-Agent header
+	jwtTransport, err = NewRoundTripper(fr, OptionReadIAMConfig("./fixtures/test_service_account.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	debug, err = DebugTransport(jwtTransport)
+	if err != nil {
+		t.Fatalf("DebugTransport detected incorrect transport: %s", err)
+	}
+	if debug.CurrentToken() != signedToken {
+		t.Fatalf("Expect token %s. Got %s", signedToken, debug.CurrentToken())
+	}
+
+	ts3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// expect Authorization header with token
+		auth := r.Header.Get("Authorization")
+		if auth != "token="+signedToken {
+			t.Fatalf("Expect request header: `Authorization: token=%s`.Got: %s", signedToken, auth)
+		}
+		// expect User-Agent header with default value
+		defaultUserAgent := "dcos-go"
+		userAgent := r.Header.Get("User-Agent")
+		if userAgent != defaultUserAgent {
+			t.Fatalf("Expected request header: `User-Agent: %s`. Got: %s", defaultUserAgent, userAgent)
+		}
+	}))
+	defer ts3.Close()
+
+	c = http.Client{
+		Transport: jwtTransport,
+	}
+
+	resp, err = c.Get(ts3.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

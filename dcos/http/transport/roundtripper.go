@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -174,8 +173,8 @@ func (t *dcosRoundtripper) CurrentToken() string {
 
 // RoundTrip is implementation of RoundTripper interface.
 func (t *dcosRoundtripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Set `User-Agent` header, defaulting to process name
-	userAgent := os.Args[0]
+	// Set `User-Agent` header, defaulting to `dcos-go`
+	userAgent := "dcos-go"
 	if t.userAgent != "" {
 		userAgent = t.userAgent
 	}
