@@ -4,10 +4,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
@@ -64,7 +64,7 @@ func imageExists(dcli *client.Client, image string) (bool, error) {
 		return true, nil
 	}
 
-	if client.IsErrImageNotFound(err) {
+	if client.IsErrNotFound(err) {
 		return false, nil
 	}
 

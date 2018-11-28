@@ -2,7 +2,8 @@ package namesgenerator
 
 import (
 	"fmt"
-	"math/rand"
+
+	"github.com/docker/docker/pkg/random"
 )
 
 var (
@@ -55,6 +56,7 @@ var (
 		"jolly",
 		"jovial",
 		"keen",
+		"kickass",
 		"kind",
 		"laughing",
 		"loving",
@@ -93,7 +95,6 @@ var (
 		"upbeat",
 		"vibrant",
 		"vigilant",
-		"vigorous",
 		"wizardly",
 		"wonderful",
 		"xenodochial",
@@ -150,9 +151,6 @@ var (
 		// Alexander Graham Bell - an eminent Scottish-born scientist, inventor, engineer and innovator who is credited with inventing the first practical telephone - https://en.wikipedia.org/wiki/Alexander_Graham_Bell
 		"bell",
 
-		// Karl Friedrich Benz - a German automobile engineer. Inventor of the first practical motorcar. https://en.wikipedia.org/wiki/Karl_Benz
-		"benz",
-
 		// Homi J Bhabha - was an Indian nuclear physicist, founding director, and professor of physics at the Tata Institute of Fundamental Research. Colloquially known as "father of Indian nuclear programme"- https://en.wikipedia.org/wiki/Homi_J._Bhabha
 		"bhabha",
 
@@ -191,9 +189,6 @@ var (
 
 		// Subrahmanyan Chandrasekhar - Astrophysicist known for his mathematical theory on different stages and evolution in structures of the stars. He has won nobel prize for physics - https://en.wikipedia.org/wiki/Subrahmanyan_Chandrasekhar
 		"chandrasekhar",
-
-		// Asima Chatterjee was an indian organic chemist noted for her research on vinca alkaloids, development of drugs for treatment of epilepsy and malaria - https://en.wikipedia.org/wiki/Asima_Chatterjee
-		"chatterjee",
 
 		//Claude Shannon - The father of information theory and founder of digital circuit design theory. (https://en.wikipedia.org/wiki/Claude_Shannon)
 		"shannon",
@@ -296,9 +291,6 @@ var (
 		// Werner Heisenberg was a founding father of quantum mechanics. https://en.wikipedia.org/wiki/Werner_Heisenberg
 		"heisenberg",
 
-		// Grete Hermann was a German philosopher noted for her philosophical work on the foundations of quantum mechanics. https://en.wikipedia.org/wiki/Grete_Hermann
-		"hermann",
-
 		// Jaroslav Heyrovský was the inventor of the polarographic method, father of the electroanalytical method, and recipient of the Nobel Prize in 1959. His main field of work was polarography. https://en.wikipedia.org/wiki/Jaroslav_Heyrovsk%C3%BD
 		"heyrovsky",
 
@@ -317,9 +309,6 @@ var (
 		// Hypatia - Greek Alexandrine Neoplatonist philosopher in Egypt who was one of the earliest mothers of mathematics - https://en.wikipedia.org/wiki/Hypatia
 		"hypatia",
 
-		// Mary Jackson, American mathematician and aerospace engineer who earned the highest title within NASA's engineering department - https://en.wikipedia.org/wiki/Mary_Jackson_(engineer)
-		"jackson",
-
 		// Yeong-Sil Jang was a Korean scientist and astronomer during the Joseon Dynasty; he invented the first metal printing press and water gauge. https://en.wikipedia.org/wiki/Jang_Yeong-sil
 		"jang",
 
@@ -328,9 +317,6 @@ var (
 
 		// Mary Lou Jepsen, was the founder and chief technology officer of One Laptop Per Child (OLPC), and the founder of Pixel Qi. https://en.wikipedia.org/wiki/Mary_Lou_Jepsen
 		"jepsen",
-
-		// Katherine Coleman Goble Johnson - American physicist and mathematician contributed to the NASA. https://en.wikipedia.org/wiki/Katherine_Johnson
-		"johnson",
 
 		// Irène Joliot-Curie - French scientist who was awarded the Nobel Prize for Chemistry in 1935. Daughter of Marie and Pierre Curie. https://en.wikipedia.org/wiki/Ir%C3%A8ne_Joliot-Curie
 		"joliot",
@@ -346,9 +332,6 @@ var (
 
 		// Mary Kenneth Keller, Sister Mary Kenneth Keller became the first American woman to earn a PhD in Computer Science in 1965. https://en.wikipedia.org/wiki/Mary_Kenneth_Keller
 		"keller",
-
-		// Johannes Kepler, German astronomer known for his three laws of planetary motion - https://en.wikipedia.org/wiki/Johannes_Kepler
-		"kepler",
 
 		// Har Gobind Khorana - Indian-American biochemist who shared the 1968 Nobel Prize for Physiology - https://en.wikipedia.org/wiki/Har_Gobind_Khorana
 		"khorana",
@@ -433,9 +416,6 @@ var (
 
 		// Ian Murdock - founder of the Debian project - https://en.wikipedia.org/wiki/Ian_Murdock
 		"murdock",
-
-		// John von Neumann - todays computer architectures are based on the von Neumann architecture. https://en.wikipedia.org/wiki/Von_Neumann_architecture
-		"neumann",
 
 		// Isaac Newton invented classic mechanics and modern optics. https://en.wikipedia.org/wiki/Isaac_Newton
 		"newton",
@@ -542,9 +522,6 @@ var (
 		// Bertha Swirles was a theoretical physicist who made a number of contributions to early quantum theory. https://en.wikipedia.org/wiki/Bertha_Swirles
 		"swirles",
 
-		// Valentina Tereshkova is a russian engineer, cosmonaut and politician. She was the first woman flying to space in 1963. In 2013, at the age of 76, she offered to go on a one-way mission to mars. https://en.wikipedia.org/wiki/Valentina_Tereshkova
-		"tereshkova",
-
 		// Nikola Tesla invented the AC electric system and every gadget ever used by a James Bond villain. https://en.wikipedia.org/wiki/Nikola_Tesla
 		"tesla",
 
@@ -560,17 +537,11 @@ var (
 		// Varahamihira - Ancient Indian mathematician who discovered trigonometric formulae during 505-587 CE - https://en.wikipedia.org/wiki/Var%C4%81hamihira#Contributions
 		"varahamihira",
 
-		// Dorothy Vaughan was a NASA mathematician and computer programmer on the SCOUT launch vehicle program that put America's first satellites into space - https://en.wikipedia.org/wiki/Dorothy_Vaughan
-		"vaughan",
-
 		// Sir Mokshagundam Visvesvaraya - is a notable Indian engineer.  He is a recipient of the Indian Republic's highest honour, the Bharat Ratna, in 1955. On his birthday, 15 September is celebrated as Engineer's Day in India in his memory - https://en.wikipedia.org/wiki/Visvesvaraya
 		"visvesvaraya",
 
 		// Christiane Nüsslein-Volhard - German biologist, won Nobel Prize in Physiology or Medicine in 1995 for research on the genetic control of embryonic development. https://en.wikipedia.org/wiki/Christiane_N%C3%BCsslein-Volhard
 		"volhard",
-
-		// Cédric Villani - French mathematician, won Fields Medal, Fermat Prize and Poincaré Price for his work in differential geometry and statistical mechanics. https://en.wikipedia.org/wiki/C%C3%A9dric_Villani
-		"villani",
 
 		// Marlyn Wescoff - one of the original programmers of the ENIAC. https://en.wikipedia.org/wiki/ENIAC - https://en.wikipedia.org/wiki/Marlyn_Meltzer
 		"wescoff",
@@ -605,14 +576,15 @@ var (
 // formatted as "adjective_surname". For example 'focused_turing'. If retry is non-zero, a random
 // integer between 0 and 10 will be added to the end of the name, e.g `focused_turing3`
 func GetRandomName(retry int) string {
+	rnd := random.Rand
 begin:
-	name := fmt.Sprintf("%s_%s", left[rand.Intn(len(left))], right[rand.Intn(len(right))])
+	name := fmt.Sprintf("%s_%s", left[rnd.Intn(len(left))], right[rnd.Intn(len(right))])
 	if name == "boring_wozniak" /* Steve Wozniak is not boring */ {
 		goto begin
 	}
 
 	if retry > 0 {
-		name = fmt.Sprintf("%s%d", name, rand.Intn(10))
+		name = fmt.Sprintf("%s%d", name, rnd.Intn(10))
 	}
 	return name
 }
