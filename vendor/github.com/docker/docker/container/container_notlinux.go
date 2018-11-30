@@ -1,4 +1,4 @@
-// +build freebsd
+// +build solaris freebsd
 
 package container
 
@@ -7,13 +7,13 @@ import (
 )
 
 func detachMounted(path string) error {
-	// FreeBSD do not support the lazy unmount or MNT_DETACH feature.
+	//Solaris and FreeBSD do not support the lazy unmount or MNT_DETACH feature.
 	// Therefore there are separate definitions for this.
 	return unix.Unmount(path, 0)
 }
 
-// SecretMounts returns the mounts for the secret path
-func (container *Container) SecretMounts() []Mount {
+// SecretMount returns the mount for the secret path
+func (container *Container) SecretMount() *Mount {
 	return nil
 }
 
