@@ -73,7 +73,7 @@ function _unittest_with_coverage {
     for import_path in ${PACKAGES}; do
         package=$(basename ${import_path})
 
-        go test -mod=vendor -v -race -covermode=$covermode                                   \
+        go test -mod=vendor -v -race -covermode=$covermode                       \
             -coverprofile="${BUILD_DIR}/coverage-reports/profile_${package}.cov" \
             $import_path | tee /dev/stderr                                       \
             | go-junit-report > "${BUILD_DIR}/test-reports/${package}-report.xml"
