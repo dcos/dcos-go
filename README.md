@@ -23,7 +23,7 @@ Pull requests should adhere to the following guidelines:
 
 ## External Libraries
 
-This project uses `go mod` to manage external dependencies. External libs are vendored into the `/vendor` directory. There is one set of dependencies for all of the packages that live in this projbect. If you need to make a change to one of the dependencies, at the current time it will need to be compatible with all of the packages. A passing CI build will ensure this.
+This project uses `go mod` to manage external dependencies. External libs are vendored into the `/vendor` directory. There is one set of dependencies for all of the packages that live in this project. If you need to make a change to one of the dependencies, at the current time it will need to be compatible with all of the packages. A passing CI build will ensure this.
 
 ## Packages In This Library
 - [jwt/transport](/jwt/transport/README.md) : JWT token support.
