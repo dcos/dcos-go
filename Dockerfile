@@ -1,4 +1,4 @@
-FROM golang:1.9.3
+FROM golang:1.11
 
 # libltdl7 is needed to run the Docker CLI
 RUN apt-get update \

@@ -1,0 +1,83 @@
+# github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
+github.com/Azure/go-ansiterm/winterm
+github.com/Azure/go-ansiterm
+# github.com/Microsoft/go-winio v0.4.7
+github.com/Microsoft/go-winio
+# github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
+github.com/Nvveen/Gotty
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/dcos/dcos-go v0.0.0-20181130074212-2f28be170989
+github.com/dcos/dcos-go/dcos/http/transport
+github.com/dcos/dcos-go/dcos
+github.com/dcos/dcos-go/exec
+github.com/dcos/dcos-go/dcos/nodeutil
+github.com/dcos/dcos-go/testutils
+# github.com/docker/distribution v2.7.0-rc.0.0.20181129231500-d9e12182359e+incompatible
+github.com/docker/distribution/reference
+github.com/docker/distribution/digestset
+# github.com/docker/docker v0.7.3-0.20181129155816-baab736a3649
+github.com/docker/docker/api/types
+github.com/docker/docker/api/types/container
+github.com/docker/docker/client
+github.com/docker/docker/pkg/jsonmessage
+github.com/docker/docker/pkg/term
+github.com/docker/docker/api/types/filters
+github.com/docker/docker/api/types/mount
+github.com/docker/docker/api/types/network
+github.com/docker/docker/api/types/registry
+github.com/docker/docker/api/types/swarm
+github.com/docker/docker/api/types/blkiodev
+github.com/docker/docker/api/types/strslice
+github.com/docker/docker/api
+github.com/docker/docker/api/types/events
+github.com/docker/docker/api/types/image
+github.com/docker/docker/api/types/time
+github.com/docker/docker/api/types/versions
+github.com/docker/docker/api/types/volume
+github.com/docker/docker/pkg/term/windows
+github.com/docker/docker/errdefs
+github.com/docker/docker/api/types/swarm/runtime
+# github.com/docker/go-connections v0.3.0
+github.com/docker/go-connections/nat
+github.com/docker/go-connections/sockets
+github.com/docker/go-connections/tlsconfig
+# github.com/docker/go-units v0.3.3
+github.com/docker/go-units
+# github.com/fortytw2/leaktest v1.2.0
+github.com/fortytw2/leaktest
+# github.com/gogo/protobuf v1.1.1
+github.com/gogo/protobuf/proto
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/opencontainers/go-digest v1.0.0-rc1
+github.com/opencontainers/go-digest
+# github.com/opencontainers/image-spec v1.0.1
+github.com/opencontainers/image-spec/specs-go/v1
+github.com/opencontainers/image-spec/specs-go
+# github.com/pkg/errors v0.0.0-20171216070316-e881fd58d78e
+github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/samuel/go-zookeeper v0.0.0-20171117190445-471cd4e61d7a
+github.com/samuel/go-zookeeper/zk
+# github.com/sirupsen/logrus v1.2.0
+github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.2.2
+github.com/stretchr/testify/require
+github.com/stretchr/testify/assert
+# golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/ed25519/internal/edwards25519
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/net v0.0.0-20170726083632-f5079bd7f6f7
+golang.org/x/net/context
+golang.org/x/net/proxy
+# golang.org/x/sys v0.0.0-20180905080454-ebe1bf3edb33
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/square/go-jose.v2 v2.1.3
+gopkg.in/square/go-jose.v2
+gopkg.in/square/go-jose.v2/jwt
+gopkg.in/square/go-jose.v2/cipher
+gopkg.in/square/go-jose.v2/json
