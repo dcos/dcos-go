@@ -1,2 +1,2 @@
 # Maintainers
-* https://github.com/collinvandyck
+* https://github.com/mrnugget
