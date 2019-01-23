@@ -26,15 +26,18 @@ Pull requests should adhere to the following guidelines:
 This project uses `go mod` to manage external dependencies. External libs are vendored into the `/vendor` directory. There is one set of dependencies for all of the packages that live in this project. If you need to make a change to one of the dependencies, at the current time it will need to be compatible with all of the packages. A passing CI build will ensure this.
 
 ## Packages In This Library
-- [jwt/transport](/jwt/transport/README.md) : JWT token support.
+
+- [dcos](/dcos/): Common constants and helpers
+- [dcos/http/transport](/dcos/http/transport/README.md) : HTTP transport with JWT token support
+- [dcos/nodeutil](/dcos/nodeutil/README.md) : Interact with DC/OS services and variables
 - [store](/store/README.md) : In-Memory key/value store.
 - [zkstore](/zkstore/README.md): ZK-based blob storage.
-- [dcos/nodeutil](/dcos/nodeutil/README.md) : Interact with DC/OS services and variables
 - [elector](/elector/README.md): Leadership election.
 
 Note that this package list is manually updated in this README.  There is some discussion about automating this process.  You can track the progress of this effort by following [this ticket](https://jira.mesosphere.com/browse/DCOS_OSS-1475).
 
 ## OSS Projects Using This Library
+
 - [dcos-log](https://github.com/dcos/dcos-log)
 - [dcos-metrics](https://github.com/dcos/dcos-metrics)
 
