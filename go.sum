@@ -10,7 +10,7 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/docker/distribution v2.7.0-rc.0.0.20181129231500-d9e12182359e+incompatible h1:/S0oVcTd/rRM77rUroPx34jvBnkbQHx9JmhetkDb8IM=
 github.com/docker/distribution v2.7.0-rc.0.0.20181129231500-d9e12182359e+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
-github.com/docker/docker v0.7.3-0.20181129155816-baab736a3649 h1:rru0BGOV6g/s1B9xBt5Gd3rOjYws6kiWIdvSEy9adLA=
+github.com/docker/docker v0.7.3-0.20181129155816-baab736a3649 h1:P27hpE9rueHE2/5zJTkJAS/wH+2SqLaBps9Z9J4xfn4=
 github.com/docker/docker v0.7.3-0.20181129155816-baab736a3649/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/go-connections v0.3.0 h1:3lOnM9cSzgGwx8VfK/NGOW5fLQ0GjIlCkaktF+n1M6o=
 github.com/docker/go-connections v0.3.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
@@ -73,6 +73,6 @@ google.golang.org/grpc v1.16.0 h1:dz5IJGuC2BB7qXR5AyHNwAUBhZscK2xVez7mznh72sY=
 google.golang.org/grpc v1.16.0/go.mod h1:0JHn/cJsOMiMfNA9+DeHDlAU7KAAB5GDlYFpa9MZMio=
 gopkg.in/square/go-jose.v2 v2.1.3 h1:/FoFBTvlJN6MTTVCe9plTOG+YydzkjvDGxiSPzIyoDM=
 gopkg.in/square/go-jose.v2 v2.1.3/go.mod h1:M9dMgbHiYLoDGQrXy7OpJDJWiKiU//h+vD76mk0e1AI=
-gotest.tools v2.2.0+incompatible h1:y0IMTfclpMdsdIbr6uwmJn5/WZ7vFuObxDMdrylFM3A=
+gotest.tools v2.2.0+incompatible h1:VsBPFP1AI068pPrMxtb/S8Zkgf9xEmTLJjfM+P5UIEo=
 gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=
 honnef.co/go/tools v0.0.0-20180728063816-88497007e858/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
