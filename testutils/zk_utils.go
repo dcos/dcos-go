@@ -54,7 +54,9 @@ func StartZookeeper(opts ...func(*ZKConfig)) (*ZkControl, error) {
 
 	// the container IP is not routable on Darwin, thus needs port
 	// mapping for the container.
-	hostConfig := &container.HostConfig{}
+	hostConfig := &container.HostConfig{
+		AutoRemove: true,
+	}
 	if runtime.GOOS == "darwin" {
 		hostConfig.PortBindings = nat.PortMap{
 			nat.Port(fmt.Sprintf("%d/tcp", config.ClientPort)): []nat.PortBinding{{
