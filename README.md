@@ -30,6 +30,7 @@ This project uses `go mod` to manage external dependencies. External libs are ve
 - [dcos](/dcos/): Common constants and helpers
 - [dcos/http/transport](/dcos/http/transport/README.md) : HTTP transport with JWT token support
 - [dcos/nodeutil](/dcos/nodeutil/README.md) : Interact with DC/OS services and variables
+- [future](/future/) : Promise and Future types for Go.
 - [store](/store/README.md) : In-Memory key/value store.
 - [zkstore](/zkstore/README.md): ZK-based blob storage.
 - [elector](/elector/README.md): Leadership election.
