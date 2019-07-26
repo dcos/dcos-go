@@ -8,12 +8,15 @@ import (
 	"time"
 )
 
+// Interface yields a Future.
 type Interface interface {
 	Future() Future
 }
 
+// Func is a func adapter for Interface.
 type Func func() Future
 
+// Future implements Interface for Func, returns nil if the receiving Func is nil.
 func (f Func) Future() Future {
 	if f == nil {
 		return nil
@@ -21,8 +24,11 @@ func (f Func) Future() Future {
 	return f()
 }
 
+// sanity check
 var _ = Interface(Func(nil))
 
+// Future represents some value and/or error that may be available at some point in the future.
+// It represents the "read-only" side of the Promise/Future pipe.
 type Future interface {
 	Interface
 	Done() <-chan struct{}
@@ -105,16 +111,21 @@ func (f *future) BlockContext(ctx context.Context) (v interface{}, err error) {
 
 func (f *future) Future() Future { return f }
 
+// Completer logic is executed upon or after the completion of a Promise.
 type Completer interface {
 	Complete(interface{}, error)
 }
 
+// CompleterFunc is the func adapter for Completer.
 type CompleterFunc func(interface{}, error)
 
+// Complete implements Completer for CompleterFunc.
 func (f CompleterFunc) Complete(v interface{}, err error) { f(v, err) }
 
+// Apply implements Option for CompleterFunc
 func (f CompleterFunc) Apply(o *Options) { o.completers = append(o.completers, f) }
 
+// If yields the receiving func if the argument if `true`, otherwise yields nil.
 func (f CompleterFunc) If(b bool) (result CompleterFunc) {
 	if b {
 		result = f
@@ -124,24 +135,32 @@ func (f CompleterFunc) If(b bool) (result CompleterFunc) {
 
 var _ Completer = CompleterFunc(nil) // sanity check
 
+// Do adapts a generic func to the completion interface.
 func Do(f func()) CompleterFunc {
 	return func(interface{}, error) { f() }
 }
 
+// Options captures partial configuration state of a Promise.
 type Options struct {
 	// completers are configured at promise construction-time and are invoked
 	// sychronously upon promise completion. they *should not* block.
 	completers []Completer
 }
 
+// Optional configuration that may be applied to Options.
 type Optional interface {
 	Apply(*Options)
 }
 
+// Option is the func adapter for Optional.
 type Option func(*Options)
 
+// Apply implements Optional for Option.
 func (f Option) Apply(o *Options) { f(o) }
 
+// Promise supports the composition of a deferred result, it represents the "write" side of
+// the Promise/Future pipe. The completion of a promise is idempotent: once a promise is
+// completed its state will no longer change.
 type Promise interface {
 	Interface
 	Error(error) Promise
@@ -195,6 +214,7 @@ func WithCompletion(c Completer) Optional {
 // See WithCompletion.
 func WithCompletionF(c CompleterFunc) Optional { return WithCompletion(c) }
 
+// NewPromise configures and yields a unique promise.
 func NewPromise(opts ...Optional) Promise {
 	var (
 		f = &future{
@@ -351,6 +371,7 @@ func Value(v interface{}) Future { return Fixture(v, nil) }
 
 var nilFixture = futureFixture{} // intentionally empty, always
 
+// Nil is an optimization and shorthand for Fixture(nil, nil).
 func Nil() Future { return nilFixture }
 
 // Fixture returns an already-completed future with the given value and error.
@@ -403,13 +424,16 @@ var _ = context.Context(&futureContext{}) // sanity check
 // Context returns a context derived from the given future; it has no deadline.
 func Context(f Interface) context.Context { return futureContext{f: f.Future()} }
 
+// Merger performs an accumulative merge of 1 or more Future results.
 type Merger interface {
 	Merge(interface{}, error) (interface{}, error)
 }
 
 // MergeFunc performs an accumulative merge of 1 or more Future results.
+// It is the func adapter for Merger.
 type MergeFunc func(interface{}, error) (interface{}, error)
 
+// Merge implements Merger for MergeFunc.
 func (f MergeFunc) Merge(v interface{}, err error) (interface{}, error) { return f(v, err) }
 
 var _ = Merger(MergeFunc(nil)) // sanity check
@@ -420,6 +444,7 @@ func Discard() MergeFunc { return func(interface{}, error) (_ interface{}, _ err
 // FirstError is a Merger that tracks the first error its asked to Merge.
 type FirstError struct{ error }
 
+// Merge implements Merger.
 func (f *FirstError) Merge(_ interface{}, err error) (interface{}, error) {
 	if f.error == nil && err != nil {
 		f.error = err
@@ -585,6 +610,8 @@ type Panic struct {
 	Err       error
 }
 
+// ErrFlattenInvalid is returned from Flatten if the given value does not implement Interface.
+// See Flatten.
 var ErrFlattenInvalid = errors.New("cannot flatten non-Future value")
 
 // Flatten deferences the value of `v` as an Interface, unless v is empty (nil) or err is
