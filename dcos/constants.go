@@ -20,7 +20,7 @@ const (
 func GetFileDetectIPLocation() string {
 	switch runtime.GOOS {
 	case "windows":
-		return "/opt/mesosphere/bin/detect_ip.ps1"
+		return "c:\\dcos\\opt\\bin\\detect_ip.ps1"
 	default:
 		return "/opt/mesosphere/bin/detect_ip"
 	}
