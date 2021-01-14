@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.0.0-20171216070316-e881fd58d78e
 	github.com/samuel/go-zookeeper v0.0.0-20171117190445-471cd4e61d7a
 	github.com/sirupsen/logrus v1.2.0 // indirect
-	github.com/stretchr/testify v1.2.2
+	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.16.0 // indirect
