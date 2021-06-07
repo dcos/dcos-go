@@ -22,6 +22,6 @@ require (
 	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.16.0 // indirect
-	gopkg.in/square/go-jose.v2 v2.1.3
+	gopkg.in/square/go-jose.v2 v2.6.0
 	gotest.tools v2.2.0+incompatible // indirect
 )
